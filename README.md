@@ -9,7 +9,7 @@ Implementation of a Binary Search Tree (BST) with recursive in-order traversal f
 including visualization, insertion and recursive sorting
 
 - To run the script: ``python -m binary_trees``
-- To run some tests: ``python -m pytest tests/binary_trees``
+- To run some tests: ``python -m pytest tests/binary_trees`` or ``pytest tests/binary_trees/test_binary_tree.py``
 
 ## Possible future structure
 

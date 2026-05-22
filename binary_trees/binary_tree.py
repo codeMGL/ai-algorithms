@@ -17,7 +17,7 @@ from utils import Node
 
 class BinaryTree:
     def __init__(self, array: list, W: int):
-        self.root = Node(array[0], W / 2, 12, rad=10)
+        self.root = Node(array[0], W / 2, 25, rad=20)
 
         self.W = W
 
@@ -60,7 +60,7 @@ class BinaryTree:
             current_node.create_child(key, elt, self.W)
 
     def sort(self, node: Node = None) -> list:
-        """Inorder traversal. Returns sorted list. O(n)"""
+        """Inorder traversal (Left-Root-Right). Returns sorted list. O(n)"""
 
         if node is None:
             node = self.root
