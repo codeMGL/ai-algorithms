@@ -7,6 +7,7 @@ Description:
 Implementation of a Binary Search Tree with recursive in-order traversal from Scratch,
 including visualization, insertion and recursive sorting
 """
+# python -m binary_trees.binary_tree
 
 from utils import Visualizer, Node
 

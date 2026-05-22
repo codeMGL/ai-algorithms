@@ -1,11 +1,10 @@
-# We use Pygame to visualize graphs with nodes
-# Other visualization options: Arcane, Matplotlib, Pyglet, Ursina...
-# This file includes some classes to make coding graphs easier and faster
+"""Using Pygame to visualize graphs with nodes
+Other visualization options: Arcane, Matplotlib, Pyglet, Ursina...
 
-# Work in progress
+This file includes some classes to make coding custom graphs
+(binary trees, Bayesian networks, etc) easier and faster"""
+
 # TO DO
-# Refactor children (array or dictionnary)
-# Refactor addChildren() and addNodes() functions --> Almost refactored to dicts
 # Resize graph horizontally as well
 # Add params to control options (node color, arrow head, etc)
 
@@ -211,7 +210,6 @@ class Visualizer:
         # List containing root nodes
         self.nodes = []
 
-    # REFACTOR both functions
     def add_root(self, root) -> None:
         self.nodes.append(root)
 

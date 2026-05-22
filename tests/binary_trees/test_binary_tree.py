@@ -1,3 +1,6 @@
+""" Testing if the BST works properly against 'sorted()' Python function"""
+# python -m pytest tests/binary_trees
+
 import pytest
 import random
 
