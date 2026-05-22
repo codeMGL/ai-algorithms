@@ -7,24 +7,19 @@ Description:
 Implementation of a Binary Search Tree with recursive in-order traversal from Scratch,
 including visualization, insertion and recursive sorting
 """
-# python -m binary_trees.binary_tree
 
-from utils import Visualizer, Node
+from utils import Node
 
 # TO DO
 # Duplicate values: Add them always to the right. Or use a counter of repeated IDs on each node
 # Investigate AVL Trees or Red-Black Trees
 
-# Screen dimensions
-W, H = 800, 700
-
-# Array of number to order
-array = [40, 12, 45, 20, 6, 19, 1, 4, 8, 7, 30, 26, 24, 17, 43]
-
 
 class BinaryTree:
-    def __init__(self, array):
+    def __init__(self, array: list, W: int):
         self.root = Node(array[0], W / 2, 12, rad=10)
+
+        self.W = W
 
         self.create_tree(array[1:])
 
@@ -62,7 +57,7 @@ class BinaryTree:
             return self._insert_recursive(child, elt)
         else:
             # We create it
-            current_node.create_child(key, elt, W)
+            current_node.create_child(key, elt, self.W)
 
     def sort(self, node: Node = None) -> list:
         """Inorder traversal. Returns sorted list. O(n)"""
@@ -85,24 +80,5 @@ class BinaryTree:
             return sorted_arr
         else:
             return [node.id]
-
-
-# BINARY TREE
-def main(array):
-    binary_tree = BinaryTree(array)
-
-    # Sorting the tree
-    sorted_tree = binary_tree.sort()
-    print("Sorted tree:\n", sorted_tree)
-
-    binary_tree.root.resize_graph(W, H)
-
-    # Visualizing the tree
-    vis = Visualizer(W, H, "Binary tree")
-
-    vis.add_root(binary_tree.root)
-    vis.run()
-
-
-if __name__ == "__main__":
-    main(array)
+        
+        

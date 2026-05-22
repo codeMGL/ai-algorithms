@@ -8,6 +8,9 @@ Drawing the graphs using the [Reingold-Tilford algorithm](https://towardsdatasci
 Implementation of a Binary Search Tree (BST) with recursive in-order traversal from Scratch,
 including visualization, insertion and recursive sorting
 
+- To run the script: ``python -m binary_trees``
+- To run some tests: ``python -m pytest tests/binary_trees``
+
 ## Possible future structure
 
 ```

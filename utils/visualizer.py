@@ -131,27 +131,6 @@ class Node:
 
             pg.draw.polygon(screen, "white", [a, b, c])
 
-    def resize_graph(self, W: int, H: int) -> None:
-        if self.parent is not None:
-            raise ValueError("Resizing should be done on the root of the tree")
-
-        # We calculate the vertical height of the graph based on the depth
-        max_depth = self._get_max_depth() + 0.5
-
-        off = 20  # small offset
-        H -= off
-
-        # -- Dividing the screen --
-        max_diameter = min((H / max_depth) * 0.7, 30 * 2)
-        # Vertical separation between parent-children levels
-        level_separation = (H / max_depth) * 0.3
-
-        self.rad = max_diameter / 2
-        self.pos.y = off / 2 + self.rad
-
-        self._resize_children(level_separation)
-        print("Graph resized!")
-
     def _get_max_depth(self) -> int:
         """Calculates the maximum depth of the graph given one node"""
 
@@ -167,18 +146,6 @@ class Node:
             left = self.children["left"]._get_max_depth()
 
         return max(right, left)
-
-    def _resize_children(self, level_separation):
-        """Resizes every children and their offspring"""
-        if self.children["right"]:
-            self.children["right"].rad = self.rad
-            self.children["right"].pos.y = self.pos.y + self.rad * 2 + level_separation
-            self.children["right"]._resize_children(level_separation)
-
-        if self.children["left"]:
-            self.children["left"].rad = self.rad
-            self.children["left"].pos.y = self.pos.y + self.rad * 2 + level_separation
-            self.children["left"]._resize_children(level_separation)
 
     def copy_node(self) -> "Node":
         copied_node = Node(
@@ -200,7 +167,7 @@ class Node:
 
 class Visualizer:
 
-    def __init__(self, W=800, H=600, window_title=""):
+    def __init__(self, W=800, H=600, window_title="", root=None):
         pg.init()
         pg.display.set_caption(window_title)
         self.screen = pg.display.set_mode((W, H))
@@ -208,14 +175,41 @@ class Visualizer:
         self.running = True
 
         # List containing root nodes
-        self.nodes = []
+        self.root = root
 
-    def add_root(self, root) -> None:
-        self.nodes.append(root)
+    def resize_graph(self, W: int, H: int) -> None:
+        # We calculate the vertical height of the graph based on the depth
+        max_depth = self.root._get_max_depth() + 0.5
 
-    def add_nodes(self, nodes) -> None:
-        for node in nodes:
-            self.nodes.append(node)
+        off = 20  # small offset
+        H -= off
+
+        # -- Dividing the screen --
+        max_diameter = min((H / max_depth) * 0.7, 30 * 2)
+        # Vertical separation between parent-children levels
+        level_separation = (H / max_depth) * 0.3
+
+        self.root.rad = max_diameter / 2
+        self.root.pos.y = off / 2 + self.root.rad
+
+        self._reposition_children(self.root, level_separation)
+        print("Graph resized!")
+
+    def _reposition_children(self, node, level_separation):
+        """Resizes every children and their offspring"""
+        if node.children["right"]:
+            node.children["right"].rad = node.rad
+            node.children["right"].pos.y = node.pos.y + node.rad * 2 + level_separation
+            self._reposition_children(
+                node.children["right"], level_separation
+            )
+
+        if node.children["left"]:
+            node.children["left"].rad = node.rad
+            node.children["left"].pos.y = node.pos.y + node.rad * 2 + level_separation
+            self._reposition_children(
+                node.children["left"], level_separation
+            )
 
     def run(self) -> None:
         while self.running:
@@ -232,9 +226,7 @@ class Visualizer:
             # --- Drawing code ---
             self.screen.fill("black")
 
-            for node in self.nodes:
-                if node:
-                    node.draw(self.screen)
+            self.root.draw(self.screen)
 
             # --- Updating screen ---
             pg.display.flip()
