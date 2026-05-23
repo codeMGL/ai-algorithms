@@ -5,22 +5,19 @@ This file includes some classes to make coding custom graphs
 (binary trees, Bayesian networks, etc) easier and faster"""
 
 # TO DO
+# REFACTOR: Difference between re-ordering BinaryNodes and other Nodes
+# - Maybe create a [temp] list such as [left_child|None, right_child|Node]
+
+
 # Resize graph horizontally as well --> Reingold-Tilford algorithm to order the graph
 # Add params to control options (node color, arrow head, etc)
 
 import pygame as pg
 
-
-def draw_text(screen: pg.surface.Surface, text: str, font_size: int, pos: pg.Vector2):
-    """Custom function to draw text"""
-    font = pg.font.SysFont("Arial", font_size)
-    text = font.render(text, True, "white")
-    rect = text.get_rect(center=pos)
-    screen.blit(text, rect)
-
-
 class Node:
-    def __init__(self, id, x, y, color=(80, 80, 80), rad=40, depth=None):
+    """Generic node class used to draw nodes and store children (using lists)"""
+
+    def __init__(self, id, x=0, y=0, color=(80, 80, 80), rad=40, depth=None):
         self.id = id
 
         self.pos = pg.Vector2(x, y)
@@ -33,36 +30,20 @@ class Node:
         self.color = color
         self.rad = int(rad)
 
-        self.children = {"left": None, "right": None}
+        self.children = []
         self.parent = None
 
         self.depth = depth if depth is not None else self.calculate_depth()
 
     def has_children(self) -> bool:
-        return self.children["left"] is not None or self.children["right"] is not None
+        return len(self.children) > 0
 
     @property
     def children_count(self) -> int:
-        children = list(self.children.values())
-        return len([c for c in children if c is not None])
-
-    @property
-    def key(self) -> int | float:
-        """Key: Whether it's a left or right child"""
-        for key in self.parent.children.keys():
-            if self.parent.children[key].id == self.id:
-                return key
+        return len(self.children)
 
     def remove_node(self) -> None:
-        # We find if it's the right or left child of its parent
-        # and then we delete it
-        left_child = self.parent.children["left"]
-        if left_child is not None and left_child == self:
-            self.parent.children["left"] = None
-
-        right_child = self.parent.children["right"]
-        if right_child is not None and right_child == self:
-            self.parent.children["right"] = None
+        self.parent.children.remove(self)
 
     def create_child(self, key: str, id: int | float, W: int) -> None:
         # x_off of the children relative to the parent
@@ -83,10 +64,16 @@ class Node:
         self.children[key] = node
         node.parent = self
 
-    def add_child(self, child: "Node", key: str) -> None:
-        if self.children[key]:
-            raise ValueError(f"VALUE ERROR: Node {self.id} already has a {key} child")
-        self.children[key] = child
+    def add_child(self, child: "Node") -> None:
+        if self.children.count(child) > 0:
+            raise ValueError(
+                f"VALUE ERROR: Node {self.id} already has a {child.id} child"
+            )
+        self.children.append(child)
+        if child.parent is None:
+            child.parent = self
+        else:
+            print("Handle exception")
 
     def calculate_depth(self) -> int:
         """Returns depth of the current node"""
@@ -105,7 +92,7 @@ class Node:
         level=depth if the subtrees are complete"""
         node = self
         # Starts at 0, unless parent has 2 children
-        level = 0 # 1 if node.children_count == 2 else 0
+        level = 0  # 1 if node.children_count == 2 else 0
 
         while node.parent:
             node = node.parent
@@ -115,7 +102,7 @@ class Node:
 
         return level
 
-    def draw(self, screen: pg.surface.Surface, draw_id: bool = True) -> None:
+    def draw(self, screen: pg.surface.Surface) -> None:
         # --- Node ---
         pg.draw.circle(screen, self.color, self.pos, self.rad)
         pg.draw.circle(screen, "white", self.pos, self.rad, width=2)
@@ -135,27 +122,25 @@ class Node:
                 self.pos.x + self.rad * 0.5, self.pos.y + self.rad * 0.35
             )
 
-            draw_text(screen, str(self.id), int(self.rad * 0.65), self.pos)
-            draw_text(screen, tag, font_size, text_pos)
+            Visualizer.draw_text(screen, str(self.id), int(self.rad * 0.65), self.pos)
+            Visualizer.draw_text(screen, tag, font_size, text_pos)
         else:
             # Just drawing its id
-            draw_text(screen, str(self.id), int(self.rad * 0.8), self.pos)
+            Visualizer.draw_text(screen, str(self.id), int(self.rad * 0.8), self.pos)
 
         # --- Drawing the children ---
-        if len(self.children) > 0:
-            for child in self.children.values():
-                if child:
-                    child.draw(screen, draw_id)
+        for child in self._get_children(self):
+            child.draw(screen)
 
-                    # Not drawing (False) if depth is > 5
-                    draw_arrow_head = self.depth < 5
+            # Not drawing (False) if depth is >= 5
+            draw_arrow_head = self.depth < 5
 
-                    self._draw_arrow(
-                        screen,
-                        child,
-                        draw_arrow_head=draw_arrow_head,
-                        arrow_size=self.rad * 0.35,
-                    )
+            self._draw_arrow(
+                screen,
+                child,
+                draw_arrow_head=draw_arrow_head,
+                arrow_size=self.rad * 0.35,
+            )
 
     def _draw_arrow(self, screen, child, draw_arrow_head=True, arrow_size=15):
         # We draw a line between the bottom of the parent
@@ -190,13 +175,13 @@ class Node:
             return self.calculate_depth()
 
         # Checks if the node has any children and calculates their depth
-        left, right = 0, 0
-        if self.children["right"]:
-            right = self.children["right"]._get_max_depth()
-        if self.children["left"]:
-            left = self.children["left"]._get_max_depth()
+        max_depth = 0
+        for children in self._get_children(self):
+            d = children._get_max_depth()
+            if d > max_depth:
+                max_depth = d
 
-        return max(right, left)
+        return max_depth
 
     def copy_node(self) -> "Node":
         copied_node = Node(
@@ -205,6 +190,11 @@ class Node:
         copied_node.parent = self.parent
         copied_node.children = self.children
         return copied_node
+
+    def _get_children(self, node):
+        if isinstance(node.children, dict):
+            return [c for c in node.children.values() if c is not None]
+        return [c for c in node.children if c is not None]
 
     def __str__(self):
         return str(self.id)
@@ -217,6 +207,7 @@ class Node:
 
 
 class Visualizer:
+    """Handles the code to draw trees on the screen, based on a root"""
 
     def __init__(self, W=800, H=600, window_title="", root=None):
         pg.init()
@@ -227,6 +218,9 @@ class Visualizer:
 
         # List containing root nodes
         self.root = root
+
+        # Automatically resizes the graph
+        self.resize_graph(W, H)
 
     def reingold_tilford(self):
         """Reingold-Tilford algorithm to order the graph"""
@@ -316,22 +310,35 @@ class Visualizer:
                 node.pos.x = parent.pos.x
             else:
                 level = node.calculate_level()
-                
-                x_off = W / (2 ** (level + 1))
-                node.pos.x = parent.pos.x - x_off  # left node
-                if node.key == "right":
-                    node.pos.x = parent.pos.x + x_off
+                if parent.children_count == 0:
+                    node.pos.x = parent.pos.x
+                else:
+                    # REFACTOR: Difference between re-ordering BinaryNodes and other Nodes
+                    # Maybe create a [temp] list such as [left_child|None, right_child|Node]
+                    if isinstance(node.children, dict):
+                        # BinaryNode
+                        x_off = W / (2 ** (level + 1))
+                        if node.key == "left":
+                            node.pos.x = parent.pos.x - x_off
+                        else:
+                            node.pos.x = parent.pos.x + x_off
+                    else:
+                        # SearchNode or generic Node
+                        # REFACTOR? Use Reingold-Tilford algorithm
+                        num = parent.children_count
+                        sep_between_children = W / (num ** (level + 1))
+                        # Leftest child position
+                        # 2 children: -0.5 * sep | 3 children: -1 * sep
+                        x_off = (num - 1) * sep_between_children
+                        index = parent.children.index(node)
+                        x = index * sep_between_children * 2
+                        node.pos.x = parent.pos.x - x_off + x
 
         # -- Vertical position --
-        if node.children["right"]:
-            node.children["right"].rad = node.rad * 0.97
-            node.children["right"].pos.y = node.pos.y + node.rad * 2 + level_separation
-            self._reposition_subtree(node.children["right"], level_separation, W)
-
-        if node.children["left"]:
-            node.children["left"].rad = node.rad * 0.97
-            node.children["left"].pos.y = node.pos.y + node.rad * 2 + level_separation
-            self._reposition_subtree(node.children["left"], level_separation, W)
+        for child in self._get_children(node):
+            child.rad = node.rad * 0.97
+            child.pos.y = node.pos.y + node.rad * 2 + level_separation
+            self._reposition_subtree(child, level_separation, W)
 
     def run(self) -> None:
         while self.running:
@@ -356,3 +363,16 @@ class Visualizer:
 
         # If not running
         pg.quit()
+
+    def _get_children(self, node):
+        if isinstance(node.children, dict):
+            return [c for c in node.children.values() if c is not None]
+        return [c for c in node.children if c is not None]
+    
+    @staticmethod
+    def draw_text(screen: pg.surface.Surface, text: str, font_size: int, pos: pg.Vector2):
+        """Custom function to draw text"""
+        font = pg.font.SysFont("Arial", font_size)
+        text = font.render(text, True, "white")
+        rect = text.get_rect(center=pos)
+        screen.blit(text, rect)
