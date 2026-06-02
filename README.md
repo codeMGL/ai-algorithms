@@ -1,15 +1,22 @@
 # ai-algorithms
 AI from Scratch: Building foundational AI algorithms in Python
 
+## How to run files
+The project is organised on folders (``search_algorithms``, ``binary_trees``, etc), ordering the different algorithms and models neatly. Each folder has it's own scripts, to run the code, and tests, to test each algorithms works properly.
+
+- To run the script: ``python -m <folder>``
+- To run some tests: ``python -m pytest tests/<folder>`` or ``pytest tests/<folder>/<test_file>.py``
+
 ## Visualizer
 Drawing the graphs using the [Reingold-Tilford algorithm](https://towardsdatascience.com/reingold-tilford-algorithm-explained-with-walkthrough-be5810e8ed93/) and the [Pygame](https://www.pygame.org/docs/) library
 
+## 1. Search algorithms
+Implementation of BFS, DFS, Dijkstra and A* algorithms from scratch
+
 ## 2. Binary Trees
-Implementation of a Binary Search Tree (BST) with recursive in-order traversal from Scratch,
+Implementation of a Binary Search Tree (BST) with recursive in-order traversal from scratch,
 including visualization, insertion and recursive sorting
 
-- To run the script: ``python -m binary_trees``
-- To run some tests: ``python -m pytest tests/binary_trees`` or ``pytest tests/binary_trees/test_binary_tree.py``
 
 ## Possible future structure
 
