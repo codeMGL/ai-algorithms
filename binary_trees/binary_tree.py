@@ -131,7 +131,6 @@ class BinaryNode(Node):
         copied_node.children = self.children
         return copied_node
 
-
 class BinaryTree:
     def __init__(self, array: list, W: int):
         self.root = BinaryNode(array[0], W / 2, 25, rad=20)
