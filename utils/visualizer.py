@@ -91,8 +91,15 @@ class Visualizer:
             return [node.id]
 
     def resize_graph(self, W: int, H: int) -> None:
+        print("all")
+        node = self.root
+        while node.has_children():
+            for child in node._get_children(node):
+                child.depth = child._compute_depth()
+            node = child
         # We calculate the vertical height of the graph based on the depth
-        max_depth = self.root._get_max_depth() + 0.5
+        max_depth = self.root.get_max_depth() + 0.5
+        print("max_depth", max_depth)
 
         off = 20  # small offset
         H -= off
@@ -100,7 +107,7 @@ class Visualizer:
         # -- Dividing the screen --
         max_diameter = min((H / max_depth) * 0.7, 30 * 2)
         # Vertical separation between parent-children levels
-        level_separation = (H / max_depth) * 0.3
+        level_separation = (H / max_depth) * 0.5
 
         self.root.rad = max_diameter / 2
         self.root.pos.y = off / 2 + self.root.rad
@@ -145,7 +152,7 @@ class Visualizer:
         # -- Vertical position --
         for child in self._get_children(node):
             child.rad = node.rad * 0.97
-            child.pos.y = node.pos.y + node.rad * 2 + level_separation
+            child.pos.y = (node.rad * 2 + level_separation) * child._depth
             self._reposition_subtree(child, level_separation, W)
 
     def run(self) -> None:
@@ -176,7 +183,7 @@ class Visualizer:
         if isinstance(node.children, dict):
             return [c for c in node.children.values() if c is not None]
         return [c for c in node.children if c is not None]
-    
+
     @staticmethod
     def draw_text(screen: pg.surface.Surface, text: str, font_size: int, pos: pg.Vector2):
         """Custom function to draw text"""

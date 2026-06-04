@@ -1,6 +1,7 @@
 import pygame as pg
 from utils import Visualizer
 
+
 class Node:
     """Generic node class used to draw nodes and store children (using lists)"""
 
@@ -20,7 +21,9 @@ class Node:
         self.children = []
         self.parent = None
 
-        self.depth = depth if depth is not None else self.calculate_depth()
+        self.parents = []  # NOT used on Binary Nodes
+
+        self._depth = self._compute_depth()
 
     def has_children(self) -> bool:
         return len(self.children) > 0
@@ -29,8 +32,10 @@ class Node:
     def children_count(self) -> int:
         return len(self.children)
 
-    def remove_node(self) -> None:
-        self.parent.children.remove(self)
+    def _get_children(self, node):
+        if isinstance(node.children, dict):
+            return [c for c in node.children.values() if c is not None]
+        return [c for c in node.children if c is not None]
 
     def create_child(self, key: str, id: int | float, W: int) -> None:
         # x_off of the children relative to the parent
@@ -51,6 +56,8 @@ class Node:
         self.children[key] = node
         node.parent = self
 
+        self._compute_depth()
+
     def add_child(self, child: "Node") -> None:
         if self.children.count(child) > 0:
             raise ValueError(
@@ -62,17 +69,40 @@ class Node:
         else:
             print("Handle exception")
 
-    def calculate_depth(self) -> int:
+        self._compute_depth()
+
+    def _compute_depth(self) -> int:
         """Returns depth of the current node"""
         # We get how many generations of parents the node has
-        self.depth = 0
+        # depth = 0
 
-        node = self
-        while node.parent:
-            node = node.parent
-            self.depth += 1
+        if not self.parent:
+            return 0
 
-        return self.depth
+        # Adding the main parent for binary nodes
+        if not self.parents:
+            self.parents = [self.parent]
+
+        parents = [parent._depth for parent in self.parents if parent]
+        max_depth = max(parents)
+        self._depth = 1 + max_depth
+        return 1 + max_depth
+
+    def get_max_depth(self) -> int:
+        """Calculates the maximum depth of the graph given one node"""
+
+        # If it's a leaf, returns its depth
+        if not self.has_children():
+            return self._compute_depth()
+
+        # Checks if the node has any children and calculates their depth
+        max_depth = 0
+        for children in self._get_children(self):
+            d = children.get_max_depth()
+            if d > max_depth:
+                max_depth = d
+
+        return max_depth
 
     def calculate_level(self) -> int:
         """Returns the node's level: number of depths in which a node has 2 children
@@ -120,7 +150,7 @@ class Node:
             child.draw(screen)
 
             # Not drawing (False) if depth is >= 5
-            draw_arrow_head = self.depth < 5
+            draw_arrow_head = self._depth < 5
 
             self._draw_arrow(
                 screen,
@@ -154,22 +184,6 @@ class Node:
 
             pg.draw.polygon(screen, "white", [a, b, c])
 
-    def _get_max_depth(self) -> int:
-        """Calculates the maximum depth of the graph given one node"""
-
-        # If it's a leaf, returns its depth
-        if not self.has_children():
-            return self.calculate_depth()
-
-        # Checks if the node has any children and calculates their depth
-        max_depth = 0
-        for children in self._get_children(self):
-            d = children._get_max_depth()
-            if d > max_depth:
-                max_depth = d
-
-        return max_depth
-
     def copy_node(self) -> "Node":
         copied_node = Node(
             self.id, self.pos.x, self.pos.y, self.color, self.rad, self.depth
@@ -178,12 +192,13 @@ class Node:
         copied_node.children = self.children
         return copied_node
 
-    def _get_children(self, node):
-        if isinstance(node.children, dict):
-            return [c for c in node.children.values() if c is not None]
-        return [c for c in node.children if c is not None]
+    def remove_node(self) -> None:
+        self.parent.children.remove(self)
 
     def __str__(self):
+        return str(self.id)
+    
+    def __repr__(self):
         return str(self.id)
 
     def __gt__(self, other):
@@ -191,6 +206,6 @@ class Node:
 
     def __eq__(self, other):
         return self.id == other.id
-    
+
     def __hash__(self):
         return hash(self.id)

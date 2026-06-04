@@ -10,8 +10,6 @@ class SearchNode(Node):
             super().__init__(id, x=W / 2, y=40, rad=45, color=color)
         else:
             super().__init__(id, color=color)
-        # Can handle multiple parents
-        self.parents = []
 
     def create_child(self, id) -> "SearchNode":
         children_ids = [c.id for c in self.children if c.id]
@@ -19,6 +17,8 @@ class SearchNode(Node):
             raise ValueError(f"VALUE ERROR: Node {self.id} already has a {id} child")
 
         child = SearchNode(id)
+        self._depth = self._compute_depth()
+
         return self.add_child(child)
 
     def add_child(self, child: "Node") -> None:
@@ -32,6 +32,8 @@ class SearchNode(Node):
         # We add the first parent as the main parent
         if child.parent is None:
             child.parent = self
+
+        self._depth = self._compute_depth()
         return child
 
     def draw(self, screen: pg.surface.Surface) -> None:
@@ -46,7 +48,7 @@ class SearchNode(Node):
             child.draw(screen)
 
             # Not drawing (False) if depth is >= 5
-            draw_arrow_head = self.depth < 5
+            draw_arrow_head = self._depth < 5
 
             self._draw_arrow(
                 screen,
@@ -54,6 +56,10 @@ class SearchNode(Node):
                 draw_arrow_head=draw_arrow_head,
                 arrow_size=self.rad * 0.35,
             )
+
+
+    def _compute_depth(self):
+        return super()._compute_depth()
 
     def __str__(self):
         _txt = f"SearchNode ({self.id})"
@@ -71,12 +77,12 @@ class SearchNode(Node):
             _txt += f"{child.id}, "
 
         return _txt[:-2]
-    
+
     def __repr__(self):
-        return str(self.id)
-    
+        return super().__repr__()
+
     def __eq__(self, other):
         return self.id == other.id
-    
+
     def __hash__(self):
         return super().__hash__()
