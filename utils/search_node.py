@@ -56,18 +56,21 @@ class SearchNode(Node):
             )
 
     def __str__(self):
-        _txt = f"SearchNode (id={self.id})"
-        _txt += f"\nParents: "
+        _txt = f"SearchNode ({self.id})"
+        _txt += f"\n Parents: "
         for parent in self.parents:
             if self.parent is not None and parent == self.parent:
                 # Main parent
                 _txt += f"*{parent.id}*, "
             else:
                 _txt += f"{parent.id}, "
-        _txt = _txt[:-2]  # Extra ', '
+        _txt = _txt[:-2]  # Deleting extra ', '
 
-        _txt += "\nChildren: "
+        _txt += "\n Children: "
         for child in self.children:
             _txt += f"{child.id}, "
 
         return _txt[:-2]
+    
+    def __repr__(self):
+        return str(self.id)
