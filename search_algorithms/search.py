@@ -1,5 +1,5 @@
 """Base class for search algorithms"""
-
+from collections import deque
 
 class SearchAlgorithm:
     def __init__(self, start, goal):
@@ -10,10 +10,13 @@ class SearchAlgorithm:
         self.current_node = start
 
         # Queue of opened nodes (FIFO)
-        self.opened = []
+        self.opened = deque()
 
         # List of expanded nodes
         self.expanded = []
+        
+        # Set of visited nodes
+        self.visited = {start}
 
         # Found path
         self.path = None
@@ -22,7 +25,7 @@ class SearchAlgorithm:
         # Implemented on each subclass
         pass
 
-    def _get_path(self):
+    def _get_path(self) -> list:
         # Starting from the goal, we traverse upwards the tree, choosing their main parent
         # to reconstruct the shortest path to the start node found by BFS
         path = [self.goal]
@@ -31,7 +34,7 @@ class SearchAlgorithm:
             path.append(node.parent)
             node = node.parent
 
-        # A deque could be used (plus returning a 'list' object), but this approach is as optimal: O(n)
+        # A deque could be used, but this approach is as optimal: O(n)
         path.reverse()
         return path
 

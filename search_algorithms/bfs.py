@@ -14,28 +14,34 @@ class BFS(SearchAlgorithm):
         super().__init__(start, goal)
 
     def run(self):
-        """DFS implementation"""
+        """BFS implementation"""
         # Current node is 'start' the first iteration
-        
+
         while self.current_node != self.goal:
             # 1. Expand the current node
             self.expanded.append(self.current_node)
 
             # 2. Add children (without repeating nodes) to the end of the queue
-            for child in self.current_node.children:
-                if child not in self.opened:
+            for child in reversed(self.current_node.children):
+                # 3. We check if the goal is already on the opened list as
+                # it's guaranteed that if we go there we'll find the optimal path
+                if child == self.goal:
+                    self.goal.parent = self.current_node
+                    self.path = self._get_path()
+                    return
+
+                if child not in self.visited:
+                    self.visited.add(child)
+
                     # We make their main parent the node that opened it
                     child.parent = self.current_node
                     self.opened.append(child)
 
-            # 3. We check if the goal is already on the opened list as
-            # it's guaranteed that if we go there we'll find the optimal path
-            if self.goal in self.opened:
-                self.goal.parent = self.current_node
-                break
-                
             # 4. We select the first node of the queue
-            self.current_node = self.opened.pop(0)
-            
+            if not self.opened:
+                # No more nodes to be opened, the goal is unreachable
+                self.path = None
+                return
+            self.current_node = self.opened.popleft()
 
         self.path = self._get_path()

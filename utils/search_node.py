@@ -74,3 +74,9 @@ class SearchNode(Node):
     
     def __repr__(self):
         return str(self.id)
+    
+    def __eq__(self, other):
+        return self.id == other.id
+    
+    def __hash__(self):
+        return super().__hash__()
