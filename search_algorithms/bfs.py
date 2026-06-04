@@ -22,7 +22,7 @@ class BFS(SearchAlgorithm):
             self.expanded.append(self.current_node)
 
             # 2. Add children (without repeating nodes) to the end of the queue
-            for child in reversed(self.current_node.children):
+            for child in self.current_node.children:
                 # 3. We check if the goal is already on the opened list as
                 # it's guaranteed that if we go there we'll find the optimal path
                 if child == self.goal:

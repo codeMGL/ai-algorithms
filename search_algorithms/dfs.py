@@ -23,7 +23,7 @@ class DFS(SearchAlgorithm):
             self.expanded.append(self.current_node)
 
             # 2. Add children (without repeating nodes) to the front of the stack
-            for child in self.current_node.children:
+            for child in reversed(self.current_node.children):
                 if child not in self.visited:
                     self.visited.add(child)
 
