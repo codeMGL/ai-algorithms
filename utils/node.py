@@ -23,19 +23,38 @@ class Node:
 
         self.parents = []  # NOT used on Binary Nodes
 
-        self._depth = self._compute_depth()
+        self._depth = self.compute_depth()
 
     def has_children(self) -> bool:
         return len(self.children) > 0
 
     @property
     def children_count(self) -> int:
-        return len(self.children)
+        return len(self.get_children())
 
-    def _get_children(self, node):
-        if isinstance(node.children, dict):
-            return [c for c in node.children.values() if c is not None]
-        return [c for c in node.children if c is not None]
+    def get_children(self):
+        if isinstance(self.children, dict):
+            return [c for c in self.children.values() if c is not None]
+        return [c for c in self.children if c is not None]
+
+    def get_siblings(self):
+        """Returns its siblings. Not counting itself as sibling"""
+        offspring = self.parent.get_children()
+        siblings = [node for node in offspring if node is not self]
+        return siblings
+
+    def get_right_siblings(self):
+        """Returns its siblings at the right. Not counting itself as sibling"""
+        offspring = self.parent.get_children()
+        idx = offspring.index(self)
+
+        # Right-est child
+        if idx == len(offspring) - 1:
+            return []
+
+        siblings = offspring[idx + 1:]
+
+        return siblings
 
     def create_child(self, key: str, id: int | float, W: int) -> None:
         # x_off of the children relative to the parent
@@ -56,7 +75,7 @@ class Node:
         self.children[key] = node
         node.parent = self
 
-        self._compute_depth()
+        self.compute_depth()
 
     def add_child(self, child: "Node") -> None:
         if self.children.count(child) > 0:
@@ -69,9 +88,9 @@ class Node:
         else:
             print("Handle exception")
 
-        self._compute_depth()
+        self.compute_depth()
 
-    def _compute_depth(self) -> int:
+    def compute_depth(self) -> int:
         """Returns depth of the current node"""
         # We get how many generations of parents the node has
         # depth = 0
@@ -93,11 +112,11 @@ class Node:
 
         # If it's a leaf, returns its depth
         if not self.has_children():
-            return self._compute_depth()
+            return self.compute_depth()
 
         # Checks if the node has any children and calculates their depth
         max_depth = 0
-        for children in self._get_children(self):
+        for children in self.get_children():
             d = children.get_max_depth()
             if d > max_depth:
                 max_depth = d
@@ -106,7 +125,7 @@ class Node:
 
     def calculate_level(self) -> int:
         """Returns the node's level: number of depths in which a node has 2 children
-        level=depth if the subtrees are complete"""
+        level=depth if the subtrees are complete (on Binary Trees)"""
         node = self
         # Starts at 0, unless parent has 2 children
         level = 0  # 1 if node.children_count == 2 else 0
@@ -118,6 +137,35 @@ class Node:
                 level += 1
 
         return level
+
+    def get_nodes_per_level(self) -> int:
+        nodes_list = self.inorder_traversal(self)
+        levels = [0] * len(nodes_list)
+        for node in nodes_list:
+            idx = node.compute_depth()
+            levels[idx] += 1
+
+        return levels
+
+    def inorder_traversal(self, node) -> list:
+        """Inorder traversal (Left-Root-Right). Returns sorted list. O(n)"""
+
+        if node.has_children():
+            # Adds left array + itself + right array
+            arr = []
+            children = node.get_children()
+            idx = int(len(children) / 2)
+
+            for child in children[:idx]:
+                arr.extend(self.inorder_traversal(child))
+
+            arr.append(node)
+
+            for child in children[idx:]:
+                arr.extend(self.inorder_traversal(child))
+            return arr
+        else:
+            return [node]
 
     def draw(self, screen: pg.surface.Surface) -> None:
         # --- Node ---
@@ -146,7 +194,7 @@ class Node:
             Visualizer.draw_text(screen, str(self.id), int(self.rad * 0.8), self.pos)
 
         # --- Drawing the children ---
-        for child in self._get_children(self):
+        for child in self.get_children():
             child.draw(screen)
 
             # Not drawing (False) if depth is >= 5
@@ -197,7 +245,7 @@ class Node:
 
     def __str__(self):
         return str(self.id)
-    
+
     def __repr__(self):
         return str(self.id)
 

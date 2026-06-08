@@ -45,7 +45,7 @@ class BinaryNode(Node):
 
         self.children[key] = node
         node.parent = self
-        node._compute_depth()
+        node.compute_depth()
 
     def add_child(self, child: "Node", key: str) -> None:
         if self.children[key]:
@@ -83,7 +83,7 @@ class BinaryNode(Node):
         return super().draw(screen)
 
     def _draw_children(self, screen):
-        for child in self._get_children(self):
+        for child in self.get_children():
             if child is None:
                 continue
             child.draw(screen)

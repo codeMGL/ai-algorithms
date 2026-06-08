@@ -19,5 +19,5 @@ print("Sorted tree:\n", sorted_tree)
 # Visualizing the tree
 vis = Visualizer(W, H, "Binary tree", root=binary_tree.root)
 
-vis.resize_graph(W=W, H=H)
+vis.resize_graph()
 vis.run()

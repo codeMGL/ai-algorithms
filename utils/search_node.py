@@ -17,7 +17,7 @@ class SearchNode(Node):
             raise ValueError(f"VALUE ERROR: Node {self.id} already has a {id} child")
 
         child = SearchNode(id)
-        self._depth = self._compute_depth()
+        self._depth = self.compute_depth()
 
         return self.add_child(child)
 
@@ -33,7 +33,7 @@ class SearchNode(Node):
         if child.parent is None:
             child.parent = self
 
-        self._depth = self._compute_depth()
+        self._depth = self.compute_depth()
         return child
 
     def draw(self, screen: pg.surface.Surface) -> None:
@@ -44,7 +44,7 @@ class SearchNode(Node):
         Visualizer.draw_text(screen, str(self.id), int(self.rad * 0.8), self.pos)
 
         # --- Drawing the children ---
-        for child in self._get_children(self):
+        for child in self.get_children():
             child.draw(screen)
 
             # Not drawing (False) if depth is >= 5
@@ -58,25 +58,26 @@ class SearchNode(Node):
             )
 
 
-    def _compute_depth(self):
-        return super()._compute_depth()
+    def compute_depth(self):
+        return super().compute_depth()
 
     def __str__(self):
-        _txt = f"SearchNode ({self.id})"
-        _txt += f"\n Parents: "
-        for parent in self.parents:
-            if self.parent is not None and parent == self.parent:
-                # Main parent
-                _txt += f"*{parent.id}*, "
-            else:
-                _txt += f"{parent.id}, "
-        _txt = _txt[:-2]  # Deleting extra ', '
+        return str(self.id)
+        # _txt = f"SearchNode ({self.id})"
+        # _txt += f"\n Parents: "
+        # for parent in self.parents:
+        #     if self.parent is not None and parent == self.parent:
+        #         # Main parent
+        #         _txt += f"*{parent.id}*, "
+        #     else:
+        #         _txt += f"{parent.id}, "
+        # _txt = _txt[:-2]  # Deleting extra ', '
 
-        _txt += "\n Children: "
-        for child in self.children:
-            _txt += f"{child.id}, "
+        # _txt += "\n Children: "
+        # for child in self.children:
+        #     _txt += f"{child.id}, "
 
-        return _txt[:-2]
+        # return _txt[:-2]
 
     def __repr__(self):
         return super().__repr__()
