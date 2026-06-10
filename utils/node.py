@@ -5,7 +5,7 @@ from utils import Visualizer
 class Node:
     """Generic node class used to draw nodes and store children (using lists)"""
 
-    def __init__(self, id, x=0, y=0, color=(80, 80, 80), rad=40, depth=None):
+    def __init__(self, id, x=0, y=0, color=(80, 80, 80), rad=100):
         self.id = id
 
         self.pos = pg.Vector2(x, y)
@@ -52,7 +52,7 @@ class Node:
         if idx == len(offspring) - 1:
             return []
 
-        siblings = offspring[idx + 1:]
+        siblings = offspring[idx + 1 :]
 
         return siblings
 
@@ -67,7 +67,7 @@ class Node:
         if key == "right":
             x = self.pos.x + x_off
 
-        node = Node(id, x, self.pos.y + self.rad * 3.5, self.color, rad=self.rad * 0.9)
+        node = Node(id, x, self.pos.y + self.rad * 3.5, self.color, rad=self.rad)
 
         if self.children[key]:
             raise ValueError(f"VALUE ERROR: Node {self.id} already has a {key} child")
@@ -167,54 +167,64 @@ class Node:
         else:
             return [node]
 
-    def draw(self, screen: pg.surface.Surface) -> None:
+    def draw(self, screen: pg.surface.Surface, scale: float) -> None:
+        # We multiply all the elements by the scale
+        pos = pg.math.Vector2(self.pos.x * scale, self.pos.y)
+        rad = self.rad * scale
+
         # --- Node ---
-        pg.draw.circle(screen, self.color, self.pos, self.rad)
-        pg.draw.circle(screen, "white", self.pos, self.rad, width=2)
-
-        # If this node is an only-child, it is positioned directly under its parent
-        parent = self.parent
-        only_child = parent and parent.children_count == 1
-        # --- Text ---
-        if only_child:
-            # We add a "L" or "R" tag
-            tag = "R"
-            if parent.children["right"] is None:
-                tag = "L"
-
-            font_size = int(self.rad * 0.45)
-            text_pos = pg.Vector2(
-                self.pos.x + self.rad * 0.5, self.pos.y + self.rad * 0.35
-            )
-
-            Visualizer.draw_text(screen, str(self.id), int(self.rad * 0.65), self.pos)
-            Visualizer.draw_text(screen, tag, font_size, text_pos)
-        else:
-            # Just drawing its id
-            Visualizer.draw_text(screen, str(self.id), int(self.rad * 0.8), self.pos)
+        pg.draw.circle(screen, self.color, pos, rad)
+        pg.draw.circle(screen, "white", pos, rad, width=2)
+        
+        self._draw_id(screen, pos, rad)
 
         # --- Drawing the children ---
         for child in self.get_children():
-            child.draw(screen)
+            child.draw(screen, scale)
 
             # Not drawing (False) if depth is >= 5
             draw_arrow_head = self._depth < 5
 
             self._draw_arrow(
                 screen,
+                scale,
                 child,
+                pos,
+                rad,
                 draw_arrow_head=draw_arrow_head,
-                arrow_size=self.rad * 0.35,
+                arrow_size=rad * 0.45,
             )
 
-    def _draw_arrow(self, screen, child, draw_arrow_head=True, arrow_size=15):
+    def _draw_arrow(
+        self, screen, scale, child, pos, rad, draw_arrow_head=True, arrow_size=15
+    ):
+        # We scale first
+        child_pos = pg.math.Vector2(child.pos.x * scale, child.pos.y)
+        child_rad = child.rad * scale
+
         # We draw a line between the bottom of the parent
         # and the top of the child
         # Then, we add a triangle to make the head of the arrow
-        parent_vec = pg.Vector2(self.pos.x, self.pos.y + self.rad)
-        child_vec = pg.Vector2(child.pos.x, child.pos.y - child.rad * 1.0)
+        parent_vec = pg.Vector2(pos.x, pos.y + rad)
+        child_vec = pg.Vector2(child_pos.x, child_pos.y - child_rad)
 
-        pg.draw.aaline(screen, "white", parent_vec, child_vec)
+        # If it's the main parent and we're drawing the arrow head
+        if child.parent == self and draw_arrow_head:
+            # Main parent, line is thicker (creating a thick anti-aliased line)
+            thickness = 3
+            for i in range(thickness):
+                # We enlarge the line on all directions
+                off = i - thickness // 2
+                pg.draw.aaline(
+                    screen,
+                    "white",
+                    (parent_vec[0] + off / 2, parent_vec[1] + off / 2),
+                    (child_vec[0] + off, child_vec[1] + off / 2),
+                )
+
+        else:
+            # Not the main parent, line is 1 pixel thick
+            pg.draw.aaline(screen, "white", parent_vec, child_vec)
 
         # --- Head ---
         if draw_arrow_head:

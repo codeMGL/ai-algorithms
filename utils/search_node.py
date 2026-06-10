@@ -2,21 +2,22 @@ import pygame as pg
 from utils import Node
 from utils import Visualizer
 
+
 class SearchNode(Node):
     """Node used for search algorithms. Can handle multiple parents"""
 
-    def __init__(self, id, root=False, color=(80, 80, 80), W = 800):
+    def __init__(self, id, root=False, color=(80, 80, 80), W=800, rad=30):
         if root:
-            super().__init__(id, x=W / 2, y=40, rad=45, color=color)
+            super().__init__(id, x=W / 2, y=40, rad=rad, color=color)
         else:
-            super().__init__(id, color=color)
+            super().__init__(id, color=color, rad=rad)
 
     def create_child(self, id) -> "SearchNode":
         children_ids = [c.id for c in self.children if c.id]
         if id in children_ids:
             raise ValueError(f"VALUE ERROR: Node {self.id} already has a {id} child")
 
-        child = SearchNode(id)
+        child = SearchNode(id, rad=self.rad)
         self._depth = self.compute_depth()
 
         return self.add_child(child)
@@ -36,30 +37,11 @@ class SearchNode(Node):
         self._depth = self.compute_depth()
         return child
 
-    def draw(self, screen: pg.surface.Surface) -> None:
-        # --- Node ---
-        pg.draw.circle(screen, self.color, self.pos, self.rad)
-        pg.draw.circle(screen, "white", self.pos, self.rad, width=2)
+    def draw(self, screen: pg.surface.Surface, scale: float) -> None:
+        return super().draw(screen, scale)
 
-        Visualizer.draw_text(screen, str(self.id), int(self.rad * 0.8), self.pos)
-
-        # --- Drawing the children ---
-        for child in self.get_children():
-            child.draw(screen)
-
-            # Not drawing (False) if depth is >= 5
-            draw_arrow_head = self._depth < 5
-
-            self._draw_arrow(
-                screen,
-                child,
-                draw_arrow_head=draw_arrow_head,
-                arrow_size=self.rad * 0.35,
-            )
-
-
-    def compute_depth(self):
-        return super().compute_depth()
+    def _draw_id(self, screen, pos, rad):
+        Visualizer.draw_text(screen, str(self.id), int(rad * 0.8), pos)
 
     def __str__(self):
         return str(self.id)

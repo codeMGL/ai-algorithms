@@ -2,10 +2,11 @@
 # Duplicate values: Add them always to the right. Or use a counter of repeated IDs on each node
 import pygame as pg
 from .node import Node
+from .visualizer import Visualizer
 
 class BinaryNode(Node):
-    def __init__(self, id, x=0, y=0, color=(80, 80, 80), rad=40, depth=None):
-        super().__init__(id, x=x, y=y, color=color, rad=rad, depth=depth)
+    def __init__(self, id, x=0, y=0, color=(80, 80, 80), rad=40):
+        super().__init__(id, x=x, y=y, color=color, rad=rad)
 
         # We overwrite the method to use dictionaries
         self.children = {"left": None, "right": None}
@@ -79,8 +80,28 @@ class BinaryNode(Node):
 
         return level
 
-    def draw(self, screen: pg.surface.Surface) -> None:
-        return super().draw(screen)
+    def draw(self, screen: pg.surface.Surface, scale:float) -> None:
+        super().draw(screen, scale)
+
+    def _draw_id(self, screen, pos, rad):
+        # If this node is an only-child, it is positioned directly under its parent
+        parent = self.parent
+        only_child = parent and parent.children_count == 1
+        # --- Text ---
+        if only_child:
+            # We add a "L" or "R" tag
+            tag = "R"
+            if parent.children["right"] is None:
+                tag = "L"
+
+            font_size = int(rad * 0.45)
+            text_pos = pg.Vector2(pos.x + rad * 0.5, pos.y + rad * 0.35)
+
+            Visualizer.draw_text(screen, str(self.id), int(rad * 0.65), pos)
+            Visualizer.draw_text(screen, tag, font_size, text_pos)
+        else:
+            # Just drawing its id
+            Visualizer.draw_text(screen, str(self.id), int(rad * 0.8), pos)
 
     def _draw_children(self, screen):
         for child in self.get_children():
