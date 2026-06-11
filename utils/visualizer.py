@@ -18,7 +18,7 @@ import pygame as pg
 class Visualizer:
     """Handles the code to draw trees on the screen, based on a root"""
 
-    def __init__(self, W=800, H=600, window_title="", root=None, scale_graph=True):
+    def __init__(self, W=800, H=600, window_title="", root=None, fit_canvas=True):
         pg.init()
         pg.display.set_caption(window_title)
         self.screen = pg.display.set_mode((W, H))
@@ -28,13 +28,19 @@ class Visualizer:
         # Root node, links the rest of the tree
         self.root = root
 
+        # --- Drawing parameters ---
         self.W = W
         self.H = H
 
         # Whether to scale the graph to fit on the screen or not
-        self.scale_to_fit = scale_graph
-        self.scale = 1
-        self.x_off, self.y_off = 0, 0
+        self._scaled_to_fit = fit_canvas
+        # SCALES: Added together when self.scale_to_fit is True
+        # Automatically calculated via R-T algorithm
+        self._scale = 1
+        # Can be edited by the user (mouse wheel)
+        self._zoom = 1
+
+        self.x_off, self.y_off = 10, 10
 
         # Automatically resizes the graph using the R-T algorithm
         self.reingold_tilford()
@@ -45,13 +51,13 @@ class Visualizer:
         # mod: Amount of shift for the descendants to make the children centered
         # shift: Amount of shift for the descendants (and the node itself) to
         # not overlap with the subtrees on the left
-
         if not self.root.has_children():
             return
 
         # First Pass
         # Post-order Traversal (Left-Right-Root) of the tree to compute the x, mod, and shift attributes
-        self._first_pass(sibling_dist, subtree_dist)
+        # self._first_pass(sibling_dist, subtree_dist)
+        self._first_pass(self.root.rad * 2, self.root.rad * 2)
 
         # Second Pass
         # Pre-order Traversal (Root-Left-Right) of the tree, to compute final x and y values
@@ -197,6 +203,128 @@ class Visualizer:
 
     def _second_pass(self):
         """Computes the real x,y coordinates of every node"""
+        # Using self.root.rad * 2
+        # DIVIDE FUNCTION IN PARTS
+        # SET COMMENTS AND DELETE UNNECESSARY ONES
+        # CLEAN CODE AND CODE ORDER (max_depth, ._depth, for nodes in nodes x2, x_off)
+
+        # Vertical height of the graph based on the depth
+        max_depth = self.root.get_max_depth()
+        print("total depth", max_depth)
+
+        # --- CALCULATING 'x' COORDINATES ---
+        nodes = self._pre_order_traversal(self.root)
+
+        # -- Calculating the 'x' coordinates after the algorithm --
+        for node in nodes:
+            # 'mod' shifts just its descendants
+            # while 'shift' shifts the current node as well
+            mod = self._get_mod(node)
+            shift = self._get_shift(node)
+            node.pos.x = node.x + mod + shift
+
+        # x_off added later
+        # # Adding some offset at both ends to make the graph look better
+        # x_off = self.x_off + self.root.rad
+        # W = self.W - x_off * 2
+
+        # -- Updating the x coordinates --
+        for node in nodes:
+            # node.pos.x = x_off + (node.pos.x - min_x) * fit_screen
+            # node.pos.x = 0 + (node.pos.x - min_x) * node.rad * 2
+            pass
+
+        # -- Calculating the minumum distance between nodes, so they don't overlap --
+        min_dist = float("inf")
+        for depth in range(1, max_depth + 1):
+            nodes_at_depth = self._get_nodes_at_depth(depth)
+            nodes_at_depth.sort(key=lambda node: node.pos.x)
+
+            for j in range(len(nodes_at_depth) - 1):
+                dist = nodes_at_depth[j + 1].pos.x - nodes_at_depth[j].pos.x
+                min_dist = min(min_dist, dist)
+
+        # Makes the node occupy all the space (plus some separation)
+        global_rad = min_dist / 3
+
+        print("Separation between nodes:", min_dist)
+        print("Nodes radius (global_rad):", global_rad)
+
+        # Adding some offset at both ends to make the graph look better
+        x_off = self.x_off + global_rad
+        W = self.W - x_off * 2
+
+        x_values = [node.pos.x for node in nodes]
+        min_x = min(x_values)
+        # Formula: range_x = (max + rad) - (min - rad) = max - min + rad + rad
+        range_x = (
+            max(x_values) - min_x + global_rad * 2
+        )  # We need to account for nodes radius as well
+        fit_screen = W / range_x  ### Transform to scale and comment meaning explanation
+        print("new fit_screen", fit_screen)
+        self._scale = fit_screen  ################################################### SCALE ###############
+
+        for node in nodes:
+            node.x_off = self.x_off
+            node.y_off = self.y_off
+
+        # The root must be in the middle of its children
+        children = self.root.get_children()
+        self.root.pos.x = (children[0].pos.x + children[-1].pos.x) / 2
+
+        # --- CALCULATING 'y' COORDINATES ---
+        y_off = self.y_off + global_rad
+        H = self.H - y_off * 2
+
+        # CHECH COMMENTS ############################
+        # Dividing the screen 'H' (each level must be at least 'global_rad * 2 + level_separation' long)
+        # Vertical size of a level
+        # Formula (Param.): line_length >= rad * 2      # Aesthetically pleasing line
+        # Formula:          level_separation = rad * 2 + line_length
+        # level_separation >= rad * 2 + rad * 2
+        # level_separation >= rad * 4
+        level_separation = H / max_depth
+
+        rad = level_separation / 4
+        print("Node rad (global_rad):", global_rad, "rad (by level separation)", rad)
+
+        global_rad = min(rad, global_rad)
+        print("final rad", global_rad)
+
+        # Adjusting the rad for each level so nodes don't overlap
+        for node in nodes:
+            # 'node.rad' cannot be bigger than the parent
+            if node.parent:
+                node.rad = min(node.parent.rad, global_rad)
+                pass
+            else:
+                # Root node
+                node.rad = global_rad
+                pass
+
+        # Already takes into account y_off as an attribute
+        self.root.pos.y = 0
+
+        # 'H' now starts from the root node, so we remove it's 'y' position
+        # H -= global_rad * 2  # self.y_off
+        level_separation = H / max_depth
+        line_length = level_separation - global_rad * 2
+        line_length = H / max_depth - global_rad * 2
+        print("level_separation", level_separation, "line_length", line_length)
+
+        y = (global_rad * 2 + line_length) * max_depth  # - global_rad * 2
+        # H = global_rad * 2 * max_depth + line_length * max_depth
+        # (H - global_rad * 2 * max_depth) / max_depth = line_length
+        #  H / max_depth - global_rad * 2 = line_length
+
+        print("H", H, "H (with line_length)", y)
+
+        self._reposition_subtree(self.root, line_length, level_separation)
+
+    # Bien con not scaled (excepto que los nodos se quedan en el borde izdo)
+    def _second_pass0(self):
+        """Computes the real x,y coordinates of every node"""
+        # sibling_dist, subtree_dist
         # DIVIDE FUNCTION IN PARTS
         # SET COMMENTS AND DELETE UNNECESSARY ONES
         # CLEAN CODE AND CODE ORDER (max_depth, ._depth, for nodes in nodes x2, x_off)
@@ -224,19 +352,9 @@ class Visualizer:
         # Multiplying factor to draw the nodes throughout all the span of the screen
         x_values = [node.pos.x for node in nodes]
         min_x = min(x_values)
-        # range_x = max(x_values) - min_x
-        # if range_x == 0:
-        #     raise ValueError("range_x is null", x_values, nodes)
-
-        # fit_screen = W / range_x
 
         # -- Updating the x coordinates --
-        # No third pass (moving negative coordinates) is needed,
-        # the leftmost node is located exactly as 'off' and the rest
-        # are all positive as well
-
         for node in nodes:
-            # node.pos.x = x_off + (node.pos.x - min_x) * fit_screen
             node.pos.x = 0 + (node.pos.x - min_x) * node.rad * 2
 
         # -- Calculating the minumum distance between nodes, so they don't overlap --
@@ -253,25 +371,16 @@ class Visualizer:
         global_rad = min_dist / 3
 
         print("Separation between nodes:", min_dist)
-        print("Nodes radius:", global_rad)
+        print("Nodes radius (global_rad):", global_rad)
 
         # Adjusting the rad for each level so nodes don't overlap
-        for depth in range(1, max_depth + 1):
-            nodes_at_depth = self._get_nodes_at_depth(depth)
-
-            for node in nodes_at_depth:
-                # 'node.rad' cannot be bigger than the parent
+        self.root.rad = global_rad
+        for node in nodes:
+            # 'node.rad' cannot be bigger than the parent
+            if node.parent:
                 node.rad = min(node.parent.rad, global_rad)
-
-                print(
-                    node,
-                    "global_rad",
-                    global_rad,
-                    "node.parent.rad",
-                    node.parent.rad,
-                    "final node.rad",
-                    node.rad,
-                )
+            else:
+                node.rad = global_rad
 
         # Adding some offset at both ends to make the graph look better
         x_off = self.x_off + global_rad
@@ -279,16 +388,18 @@ class Visualizer:
 
         x_values = [node.pos.x for node in nodes]
         min_x = min(x_values)
-        range_x = max(x_values) - min_x
-        fit_screen = W / range_x ### Transform to scale and comment meaning explanation
+        range_x = (
+            max(x_values) - min_x + global_rad * 2
+        )  # We need to account for nodes radius as well
+        fit_screen = W / range_x  ### Transform to scale and comment meaning explanation
         print("new fit_screen", fit_screen)
-        self.scale = fit_screen  ################################################### SCALE ############### 
+        self._scale = fit_screen  ################################################### SCALE ###############
 
         for node in nodes:
             # node.pos.x = off + (node.pos.x - min_x) * fit_screen
             # node.pos.x = off + (node.pos.x - min_x) * node.rad * 2
-            node.pos.x += x_off
-            pass
+            node.x_off = self.x_off
+            node.y_off = self.y_off
 
         # The root must be in the middle of its children
         children = self.root.get_children()
@@ -307,18 +418,29 @@ class Visualizer:
         # level_separation >= rad * 4
         # rad = level_separation / 4
 
+        # Already takes into account y_off as an attribute
+        self.root.pos.y = 0
+
+        # 'H' now starts from the root node, so we remove it's 'y' position
+        # H -= global_rad * 2  # self.y_off
         level_separation = H / max_depth
         line_length = level_separation - global_rad * 2
+        line_length = H / max_depth - global_rad * 2
 
-        self.root.pos.y = self.y_off / 2 + self.root.rad
-        self.level_separation = level_separation
+        y = (global_rad * 2 + line_length) * max_depth  # - global_rad * 2
+        # H = global_rad * 2 * max_depth + line_length * max_depth
+        # (H - global_rad * 2 * max_depth) / max_depth = line_length
+        #  H / max_depth - global_rad * 2 = line_length
+
+        print("H", H, "H (with line_length)", y)
+
         self._reposition_subtree(self.root, line_length, level_separation)
 
     def _reposition_subtree(self, node, line_length, level_separation):
         """Updates the 'y' position of every children and their offspring"""
-        
+
         for child in node.get_children():
-            child.pos.y = (child.rad * 2 + line_length) * child._depth
+            child.pos.y = (child.rad * 2 + line_length) * child.depth
             self._reposition_subtree(child, line_length, level_separation)
 
     def _get_nodes_at_depth(self, depth) -> list:
@@ -376,12 +498,33 @@ class Visualizer:
                     self.running = False
 
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_s:
-                        self.scale_to_fit = not self.scale_to_fit
-                        # self._second_pass()
+                    if event.key == pg.K_SPACE:
+                        self._scaled_to_fit = not self._scaled_to_fit
+
+                if event.type == pg.MOUSEWHEEL:
+                    self._zoom += event.precise_y * 0.1
 
             if keys[pg.K_q]:
                 self.running = False
+
+            # Translating the graph
+            step = 15
+            if keys[pg.K_RIGHT] or keys[pg.K_d]:
+                self._move_graph(-step, 0)
+
+            if keys[pg.K_LEFT] or keys[pg.K_a]:
+                self._move_graph(step, 0)
+
+            if keys[pg.K_UP] or keys[pg.K_w]:
+                self._move_graph(0, step)
+
+            if keys[pg.K_DOWN] or keys[pg.K_s]:
+                self._move_graph(0, -step)
+
+            # Reseting position
+            if keys[pg.K_r]:
+                self._zoom = 1
+                self._move_graph(10, 10, reset=True)
 
             self.draw()
 
@@ -393,21 +536,30 @@ class Visualizer:
         self.screen.fill("black")
 
         # Writing if the graph is scaled or not & applying scale
-        if self.scale_to_fit:
-            Visualizer.draw_text(
-                self.screen, f"Scale: {round(self.scale, 2)}", 18, (40, 20)
-            )
-            self.root.draw(self.screen, self.scale)
+        if self._scaled_to_fit:
+            scale = self._scale * self._zoom
+            self.root.draw(self.screen, scale)
+            Visualizer.draw_text(self.screen, f"Scaled to fit. Scale: {round(scale, 2)}", 18, (90, 20))
         else:
-            Visualizer.draw_text(
-                self.screen, "Not scaled, move through the graph", 18, (120, 20)
-            )
-            Visualizer.draw_text(self.screen, "with the arrow keys", 18, (70, 40))
-            self.root.draw(self.screen, 1)
+            self.root.draw(self.screen, self._zoom)
+            Visualizer.draw_text(self.screen, f"Infinite canvas. Scale: {round(self._zoom, 2)}", 18, (90, 20))
 
         # --- Updating screen ---
         pg.display.flip()
         self.clock.tick(60)  # 60 FPS
+
+    def _move_graph(self, x, y, reset=False):
+        if reset:
+            # Resets the entire graph position, no moves it
+            self.x_off, self.y_off = x, y
+        else:
+            self.x_off += x
+            self.y_off += y
+
+        nodes = self._pre_order_traversal(self.root)
+        for node in nodes:
+            node.x_off = self.x_off
+            node.y_off = self.y_off
 
     def get_children(self, node):
         print("=" * 20, "Shoudln't be used! Refactor", node.id, node)
