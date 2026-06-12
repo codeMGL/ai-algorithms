@@ -137,8 +137,6 @@ class ReingoldTilford:
         self._calc_y_coords(nodes, max_depth, node_radius)
 
     def _calc_x_coords(self, nodes, max_depth):
-        # --- CALCULATING 'x' COORDINATES ---
-
         # -- Calculating the 'x' coordinates after the algorithm --
         for node in nodes:
             # 'mod' shifts just its descendants
@@ -200,10 +198,11 @@ class ReingoldTilford:
         level_separation = H / max_depth
         max_rad_by_separation = level_separation / 4
 
-        line_length = level_separation - node_radius * 2
-
         # We choose the better option, so they don't intersect
         node_radius = min(max_rad_by_separation, node_radius)
+
+        line_length = level_separation - node_radius * 2
+
 
         # Adjusting the rad for each level so nodes don't overlap
         for node in nodes:
