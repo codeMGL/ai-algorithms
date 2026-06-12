@@ -15,10 +15,8 @@ from utils import BinaryNode
 # Investigate AVL Trees or Red-Black Trees
 
 class BinaryTree:
-    def __init__(self, array: list, W: int):
-        self.root = BinaryNode(array[0], W / 2, 25, rad=20)
-
-        self.W = W
+    def __init__(self, array: list):
+        self.root = BinaryNode(id=array[0], rad=40)
 
         self.create_tree(array[1:])
 
@@ -56,7 +54,7 @@ class BinaryTree:
             return self._insert_recursive(child, elt)
         else:
             # We create it
-            current_node.create_child(key, elt, self.W)
+            current_node.create_child(key, elt)
 
     def sort(self, node: BinaryNode = None) -> list:
         """Inorder traversal (Left-Root-Right). Returns sorted list. O(n)"""

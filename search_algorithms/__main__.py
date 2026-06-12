@@ -3,14 +3,16 @@ from .bfs import BFS
 from .dfs import DFS
 from utils import Visualizer, SearchNode
 
-W, window_H = 800, 700
+window_W, window_H = 800, 700
 
 
 def create_graph(arg):
+    start_color = (20, 170, 30)
+    goal_color = (23, 104, 72)
     match arg:
         case "graph1":
             # A --> J
-            start = SearchNode("A", root=True, color=(20, 170, 30))
+            start = SearchNode("A", root=True, color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -23,11 +25,11 @@ def create_graph(arg):
             H = D.create_child("H")
             I = D.create_child("I")
 
-            goal = SearchNode("J", color=(50, 80, 100))
+            goal = SearchNode("J", color=goal_color)
             I.add_child(goal)
         case "graph2":
             # A --> H
-            start = SearchNode("A", root=True, color=(20, 170, 30), W=W)
+            start = SearchNode("A", root=True, color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -39,13 +41,13 @@ def create_graph(arg):
             F = D.create_child("F")
             G = D.create_child("G")
 
-            goal = SearchNode("H", color=(50, 80, 100))
+            goal = SearchNode("H", color=goal_color)
             E.add_child(goal)
             G.add_child(goal)
 
         case "graph3":
             # A --> I
-            start = SearchNode("A", root=True, color=(20, 170, 30), W=W)
+            start = SearchNode("A", root=True, color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -60,12 +62,13 @@ def create_graph(arg):
             E.add_child(G)
             E.create_child("H")
 
-            goal = SearchNode("I", color=(50, 80, 100))
+            goal = SearchNode("I", color=goal_color)
             G.add_child(goal)
 
         case "graph4":
             # A --> Z
-            start = SearchNode("A", root=True, color=(20, 170, 30), W=W)
+            start = SearchNode("A", root=True, color=start_color)
+            print(start.color)
             B = start.create_child("B")
             C = start.create_child("C")
             D = start.create_child("D")
@@ -77,28 +80,64 @@ def create_graph(arg):
 
             I = C.create_child("I")
             J = C.create_child("J")
-            K = C.create_child("K")
+            K = E.create_child("K")
 
             L = K.create_child("L")
             M = K.create_child("M")
             J.add_child(M)
-            N = M.create_child("N")
+            N = L.create_child("N")
             O = N.create_child("O")
-            P = O.create_child("P")
 
-            goal = SearchNode("Z", color=(50, 80, 100))
-            P.add_child(goal)
+            goal = SearchNode("Z", color=goal_color)
+            O.add_child(goal)
+
+        case "test_graph":
+            # r -> p
+            start = SearchNode("r", root=True, color=(20, 170, 30))
+
+            g = start.create_child("g")
+            h = start.create_child("h")
+            n = start.create_child("n")
+            q = start.create_child("q")
+
+            a = g.create_child("a")
+            b = g.create_child("b")
+            e = g.create_child("e")
+            f = g.create_child("f")
+
+            c = e.create_child("c")
+            d = e.create_child("d")
+
+            k = n.create_child("k")
+            l = n.create_child("l")
+            m = n.create_child("m")
+
+            i = k.create_child("i")
+            j = k.create_child("j")
+
+            o = q.create_child("o")
+            goal = SearchNode("p", color=goal_color)
+            q.add_child(goal)
         case _:
             raise ValueError("Graph not defined. Please choose a valid argument")
 
     return start, goal
+
 
 # -- Running the chosen algorithm --
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "graph",
-        choices=("graph1", "graph2", "graph3", "graph4", "8-puzzle", "top-spin"),
+        choices=(
+            "graph1",
+            "graph2",
+            "graph3",
+            "graph4",
+            "test_graph",
+            "8-puzzle",
+            "top-spin",
+        ),
         help="Graph to run the algorithm in",
     )
     parser.add_argument(
@@ -137,8 +176,9 @@ def main():
             raise ValueError("Incorrect argument")
 
     # -- Running the graph visualizer --
-    vis = Visualizer(W, window_H, window_title="Search Algorithms", root=start)
+    vis = Visualizer(window_W, window_H, window_title="Search Algorithms", root=start)
     vis.run()
+
 
 if __name__ == "__main__":
     main()

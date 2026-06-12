@@ -4,9 +4,11 @@ import pygame as pg
 from .node import Node
 from .visualizer import Visualizer
 
+
 class BinaryNode(Node):
-    def __init__(self, id, x=0, y=0, color=(80, 80, 80), rad=40):
-        super().__init__(id, x=x, y=y, color=color, rad=rad)
+
+    def __init__(self, id, color=(50, 80, 100), rad=20):
+        super().__init__(id, color=color, rad=rad)
 
         # We overwrite the method to use dictionaries
         self.children = {"left": None, "right": None}
@@ -26,20 +28,9 @@ class BinaryNode(Node):
             if self.parent.children[key].id == self.id:
                 return key
 
-    def create_child(self, key: str, id: int | float, W: int) -> None:
+    def create_child(self, key: str, id: int | float) -> None:
         # x_off of the children relative to the parent
-        # First gen get's a W / 4 offset. Second W / 8
-        # As the first gen has a depth of one --> 4 = 2 ** (depth=1 + 1)
-        level = self.calculate_level()
-        x_off = W / (2 ** (level + 2))
-
-        x = self.pos.x - x_off
-        if key == "right":
-            x = self.pos.x + x_off
-
-        node = BinaryNode(
-            id, x, self.pos.y + self.rad * 3.5, self.color, rad=self.rad * 0.9
-        )
+        node = BinaryNode(id, self.color, rad=self.rad * 0.9)
 
         if self.children[key]:
             raise ValueError(f"VALUE ERROR: Node {self.id} already has a {key} child")
@@ -80,8 +71,32 @@ class BinaryNode(Node):
 
         return level
 
-    def draw(self, screen: pg.surface.Surface, scale:float) -> None:
-        super().draw(screen, scale)
+    def draw(self, screen: pg.surface.Surface, scale: float) -> None:
+        # We multiply all the elements by the scale
+        pos, rad = self._scaled_pos_rad(scale)
+
+        # --- Node ---
+        pg.draw.circle(screen, self.color, pos, rad)
+        pg.draw.circle(screen, "white", pos, rad, width=2)
+
+        self._draw_id(screen, pos, rad)
+
+        # Drawing the children
+        for child in self.get_children():
+            child.draw(screen, scale)
+
+            # Not drawing (False) if depth is >= 5
+            draw_arrow_head = self.depth < 5
+
+            self._draw_arrow(
+                screen,
+                scale,
+                child,
+                pos,
+                rad,
+                draw_arrow_head=draw_arrow_head,
+                arrow_size=self.rad * 0.35,
+            )
 
     def _draw_id(self, screen, pos, rad):
         # If this node is an only-child, it is positioned directly under its parent
@@ -102,22 +117,6 @@ class BinaryNode(Node):
         else:
             # Just drawing its id
             Visualizer.draw_text(screen, str(self.id), int(rad * 0.8), pos)
-
-    def _draw_children(self, screen):
-        for child in self.get_children():
-            if child is None:
-                continue
-            child.draw(screen)
-
-            # Not drawing (False) if depth is >= 5
-            draw_arrow_head = self.depth < 5
-
-            self._draw_arrow(
-                screen,
-                child,
-                draw_arrow_head=draw_arrow_head,
-                arrow_size=self.rad * 0.35,
-            )
 
     def copy_node(self) -> "BinaryNode":
         copied_node = BinaryNode(

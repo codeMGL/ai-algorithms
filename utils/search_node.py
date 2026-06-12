@@ -6,9 +6,9 @@ from utils import Visualizer
 class SearchNode(Node):
     """Node used for search algorithms. Can handle multiple parents"""
 
-    def __init__(self, id, root=False, color=(80, 80, 80), W=800, rad=30):
+    def __init__(self, id, root=False, color=(50, 80, 100), rad=30):
         if root:
-            super().__init__(id, x=W / 2, y=40, rad=rad, color=color)
+            super().__init__(id, rad=rad, color=color)
         else:
             super().__init__(id, color=color, rad=rad)
 

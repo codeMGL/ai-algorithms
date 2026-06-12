@@ -5,10 +5,11 @@ from utils import Visualizer
 class Node:
     """Generic node class used to draw nodes and store children (using lists)"""
 
-    def __init__(self, id, x=0, y=0, color=(80, 80, 80), rad=100):
+    def __init__(self, id, color=(50, 80, 100), rad=30):
         self.id = id
 
-        self.pos = pg.Vector2(x, y)
+        self.pos = pg.Vector2(0, 0)
+        self.x_off, self.y_off = 0, 0
 
         # Reingold-Tilford algorithm params
         self.x = 0
@@ -23,7 +24,7 @@ class Node:
 
         self.parents = []  # NOT used on Binary Nodes
 
-        self._depth = self.compute_depth()
+        self.depth = self.compute_depth()
 
     def has_children(self) -> bool:
         return len(self.children) > 0
@@ -102,9 +103,9 @@ class Node:
         if not self.parents:
             self.parents = [self.parent]
 
-        parents = [parent._depth for parent in self.parents if parent]
-        max_depth = max(parents)
-        self._depth = 1 + max_depth
+        parent_depths = [parent.depth for parent in self.parents if parent]
+        max_depth = max(parent_depths)
+        self.depth = 1 + max_depth
         return 1 + max_depth
 
     def get_max_depth(self) -> int:
@@ -167,15 +168,33 @@ class Node:
         else:
             return [node]
 
+    def _scaled_pos_rad(self, scale) -> tuple:
+        rad = self.rad * min(scale, 1.5)
+        # Constraining to get nice radius
+        rad = min(rad, 30)
+
+        # We position the root at the top, regardless of the scale
+        x = rad + self.x_off + (self.pos.x) * scale
+        if not self.parents:
+            y = self.y_off + rad + self.pos.y
+        else:
+            y = self.y_off + self.rad + self.pos.y
+
+        # Constraining the values
+        x = min(max(x, -(2**20)), 2**20)
+        y = min(max(y, -(2**20)), 2**20)
+        pos = pg.math.Vector2(x, y)
+
+        return pos, rad
+
     def draw(self, screen: pg.surface.Surface, scale: float) -> None:
         # We multiply all the elements by the scale
-        pos = pg.math.Vector2(self.pos.x * scale, self.pos.y)
-        rad = self.rad * scale
+        pos, rad = self._scaled_pos_rad(scale)
 
         # --- Node ---
         pg.draw.circle(screen, self.color, pos, rad)
         pg.draw.circle(screen, "white", pos, rad, width=2)
-        
+
         self._draw_id(screen, pos, rad)
 
         # --- Drawing the children ---
@@ -183,7 +202,7 @@ class Node:
             child.draw(screen, scale)
 
             # Not drawing (False) if depth is >= 5
-            draw_arrow_head = self._depth < 5
+            draw_arrow_head = self.depth < 5
 
             self._draw_arrow(
                 screen,
@@ -199,8 +218,14 @@ class Node:
         self, screen, scale, child, pos, rad, draw_arrow_head=True, arrow_size=15
     ):
         # We scale first
-        child_pos = pg.math.Vector2(child.pos.x * scale, child.pos.y)
-        child_rad = child.rad * scale
+        child_pos, child_rad = child._scaled_pos_rad(scale)
+
+        # if not self.parents:
+        #     print(self.id, child.id)
+        #     y = child.y_off + rad + child.pos.y
+        # else:
+        #     y = child.y_off + child.rad + child.pos.y
+        # child_pos = pg.math.Vector2((child.x_off + child.pos.x) * scale + rad, y)
 
         # We draw a line between the bottom of the parent
         # and the top of the child
@@ -208,7 +233,6 @@ class Node:
         parent_vec = pg.Vector2(pos.x, pos.y + rad)
         child_vec = pg.Vector2(child_pos.x, child_pos.y - child_rad)
 
-        # If it's the main parent and we're drawing the arrow head
         if child.parent == self and draw_arrow_head:
             # Main parent, line is thicker (creating a thick anti-aliased line)
             thickness = 3
