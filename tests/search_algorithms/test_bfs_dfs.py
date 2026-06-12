@@ -3,7 +3,7 @@ import pytest
 import random
 
 from search_algorithms import BFS, DFS
-from utils import SearchNode, Visualizer
+from utils import Node, Visualizer
 
 random.seed(42)
 
@@ -12,7 +12,7 @@ test_values = [1, 10, 100, 1000, 10_000, 100_000]
 
 
 def random_tree_generator(n):
-    start = SearchNode("0", root=True)
+    start = Node("0")
 
     G= nx.Graph()
 
@@ -51,8 +51,8 @@ def test_bfs(n):
     bfs = BFS(start, goal)
     bfs.run()
 
-    # vis = Visualizer(window_W, window_H, root=start)
-    # vis.run()
+    vis = Visualizer(window_W, window_H, root=start)
+    vis.run()
 
     path = nx.shortest_path(G, start.id, goal.id)
 

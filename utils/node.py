@@ -3,7 +3,7 @@ from utils import Visualizer
 
 
 class Node:
-    """Generic node class used to draw nodes and store children (using lists)"""
+    """Generic node class used to draw nodes and link children. Can handle multiple parents"""
 
     def __init__(self, id, color=(50, 80, 100), rad=30):
         self.id = id
@@ -26,8 +26,9 @@ class Node:
 
         self.depth = self.compute_depth()
 
+    # --- TREE STRUCTURE ---
     def has_children(self) -> bool:
-        return len(self.children) > 0
+        return len(self.get_children()) > 0
 
     @property
     def children_count(self) -> int:
@@ -57,44 +58,47 @@ class Node:
 
         return siblings
 
-    def create_child(self, key: str, id: int | float, W: int) -> None:
-        # x_off of the children relative to the parent
-        # First gen get's a W / 4 offset. Second W / 8
-        # As the first gen has a depth of one --> 4 = 2 ** (depth=1 + 1)
-        level = self.calculate_level()
-        x_off = W / (2 ** (level + 2))
+    def create_child(self, id: int | float) -> "Node":
 
-        x = self.pos.x - x_off
-        if key == "right":
-            x = self.pos.x + x_off
+        children_ids = [c.id for c in self.children if c.id]
+        if id in children_ids:
+            raise ValueError(f"VALUE ERROR: Node {self.id} already has a {id} child")
 
-        node = Node(id, x, self.pos.y + self.rad * 3.5, self.color, rad=self.rad)
+        # Creates a child of it's type (accepts polymorphism)
+        child = type(self)(id, rad=self.rad)
 
-        if self.children[key]:
-            raise ValueError(f"VALUE ERROR: Node {self.id} already has a {key} child")
+        return self.add_child(child)
 
-        self.children[key] = node
-        node.parent = self
-
-        self.compute_depth()
-
-    def add_child(self, child: "Node") -> None:
+    def add_child(self, child: "Node") -> "Node":
         if self.children.count(child) > 0:
             raise ValueError(
                 f"VALUE ERROR: Node {self.id} already has a {child.id} child"
             )
+
         self.children.append(child)
+
+        child.parents.append(self)
+
         if child.parent is None:
             child.parent = self
-        else:
-            print("Handle exception")
 
         self.compute_depth()
 
+        return child
+
+    def copy_node(self) -> "Node":
+        copied_node = type(self)(self.id, color=self.color, rad=self.rad)
+        copied_node.parent = self.parent
+        copied_node.children = self.get_children()
+        return copied_node
+
+    def remove_node(self) -> None:
+        self.parent.children.remove(self)
+
+    # --- DEPTH / LEVEL CALCULATIONS ---
     def compute_depth(self) -> int:
         """Returns depth of the current node"""
         # We get how many generations of parents the node has
-        # depth = 0
 
         if not self.parent:
             return 0
@@ -106,7 +110,7 @@ class Node:
         parent_depths = [parent.depth for parent in self.parents if parent]
         max_depth = max(parent_depths)
         self.depth = 1 + max_depth
-        return 1 + max_depth
+        return self.depth
 
     def get_max_depth(self) -> int:
         """Calculates the maximum depth of the graph given one node"""
@@ -139,8 +143,69 @@ class Node:
 
         return level
 
+    # --- TRAVERSALS ---
+    def pre_order_traversal(self, visited=None):
+        """Pre-order Traversal (Root-Left-Right). Returns sorted list. O(n)"""
+        # Tracks with a 'visited' set the nodes that have already been added
+        if visited is None:
+            visited = set()  # Prevents mutable default argument bug
+
+        if self in visited:
+            return []
+
+        # Adds itself + left array + right array
+        arr = []
+
+        arr.append(self)
+        visited.add(self)
+        for child in self.get_children():
+            arr.extend(child.pre_order_traversal(visited))
+
+        return arr
+
+    def post_order_traversal(self, visited=None):
+        """Post-order Traversal (Left-Right-Root). Returns sorted list. O(n)"""
+        # Tracks with a 'visited' set the nodes that have already been added
+        if visited is None:
+            visited = set()  # Prevents mutable default argument bug
+
+        if self in visited:
+            # Not adding it twice
+            return []
+
+        # Adds left array + right array + itself
+
+        arr = []
+        for child in self.get_children():
+            arr.extend(child.post_order_traversal(visited))
+
+        arr.append(self)
+        visited.add(self)
+
+        return arr
+
+    def inorder_traversal(self) -> list:
+        """Inorder traversal (Left-Root-Right). Returns sorted list. O(n)"""
+
+        if self.has_children():
+            # Adds left array + itself + right array
+            arr = []
+            children = self.get_children()
+            idx = int(len(children) / 2)
+
+            for child in children[:idx]:
+                arr.extend(child.inorder_traversal())
+
+            arr.append(self)
+
+            for child in children[idx:]:
+                arr.extend(child.inorder_traversal())
+            return arr
+        else:
+            return [self]
+
     def get_nodes_per_level(self) -> int:
-        nodes_list = self.inorder_traversal(self)
+        nodes_list = self.inorder_traversal()
         levels = [0] * len(nodes_list)
         for node in nodes_list:
             idx = node.compute_depth()
@@ -148,25 +213,32 @@ class Node:
 
         return levels
 
-    def inorder_traversal(self, node) -> list:
-        """Inorder traversal (Left-Root-Right). Returns sorted list. O(n)"""
+    # --- DRAWING ---
+    def draw(self, screen: pg.surface.Surface, scale: float) -> None:
+        # We multiply all the elements by the scale
+        pos, rad = self._scaled_pos_rad(scale)
 
-        if node.has_children():
-            # Adds left array + itself + right array
-            arr = []
-            children = node.get_children()
-            idx = int(len(children) / 2)
+        # --- Node ---
+        pg.draw.circle(screen, self.color, pos, rad)
+        pg.draw.circle(screen, "white", pos, rad, width=2)
 
-            for child in children[:idx]:
-                arr.extend(self.inorder_traversal(child))
+        self._draw_id(screen, pos, rad)
 
-            arr.append(node)
+        # --- Drawing the children ---
+        for child in self.get_children():
+            child.draw(screen, scale)
 
-            for child in children[idx:]:
-                arr.extend(self.inorder_traversal(child))
-            return arr
-        else:
-            return [node]
+            # Not drawing (False) if depth is >= 5
+            draw_arrow_head = self.depth < 5
+
+            Visualizer.draw_arrow(
+                screen,
+                scale,
+                self,
+                child,
+                draw_arrow_head=draw_arrow_head,
+                arrow_size=rad * 0.45,
+            )
 
     def _scaled_pos_rad(self, scale) -> tuple:
         rad = self.rad * min(scale, 1.5)
@@ -187,96 +259,10 @@ class Node:
 
         return pos, rad
 
-    def draw(self, screen: pg.surface.Surface, scale: float) -> None:
-        # We multiply all the elements by the scale
-        pos, rad = self._scaled_pos_rad(scale)
+    def _draw_id(self, screen, pos, rad):
+        Visualizer.draw_text(screen, str(self.id), int(rad * 0.8), pos)
 
-        # --- Node ---
-        pg.draw.circle(screen, self.color, pos, rad)
-        pg.draw.circle(screen, "white", pos, rad, width=2)
-
-        self._draw_id(screen, pos, rad)
-
-        # --- Drawing the children ---
-        for child in self.get_children():
-            child.draw(screen, scale)
-
-            # Not drawing (False) if depth is >= 5
-            draw_arrow_head = self.depth < 5
-
-            self._draw_arrow(
-                screen,
-                scale,
-                child,
-                pos,
-                rad,
-                draw_arrow_head=draw_arrow_head,
-                arrow_size=rad * 0.45,
-            )
-
-    def _draw_arrow(
-        self, screen, scale, child, pos, rad, draw_arrow_head=True, arrow_size=15
-    ):
-        # We scale first
-        child_pos, child_rad = child._scaled_pos_rad(scale)
-
-        # if not self.parents:
-        #     print(self.id, child.id)
-        #     y = child.y_off + rad + child.pos.y
-        # else:
-        #     y = child.y_off + child.rad + child.pos.y
-        # child_pos = pg.math.Vector2((child.x_off + child.pos.x) * scale + rad, y)
-
-        # We draw a line between the bottom of the parent
-        # and the top of the child
-        # Then, we add a triangle to make the head of the arrow
-        parent_vec = pg.Vector2(pos.x, pos.y + rad)
-        child_vec = pg.Vector2(child_pos.x, child_pos.y - child_rad)
-
-        if child.parent == self and draw_arrow_head:
-            # Main parent, line is thicker (creating a thick anti-aliased line)
-            thickness = 3
-            for i in range(thickness):
-                # We enlarge the line on all directions
-                off = i - thickness // 2
-                pg.draw.aaline(
-                    screen,
-                    "white",
-                    (parent_vec[0] + off / 2, parent_vec[1] + off / 2),
-                    (child_vec[0] + off, child_vec[1] + off / 2),
-                )
-
-        else:
-            # Not the main parent, line is 1 pixel thick
-            pg.draw.aaline(screen, "white", parent_vec, child_vec)
-
-        # --- Head ---
-        if draw_arrow_head:
-            # Triangle abc, with 'b' being the top of the head
-            difference_vector = parent_vec - child_vec
-            difference_vector.scale_to_length(arrow_size)
-
-            a = difference_vector.copy().rotate(30)
-            a += child_vec
-
-            c = difference_vector.copy().rotate(-30)
-            c += child_vec
-
-            b = child_vec.copy()
-
-            pg.draw.polygon(screen, "white", [a, b, c])
-
-    def copy_node(self) -> "Node":
-        copied_node = Node(
-            self.id, self.pos.x, self.pos.y, self.color, self.rad, self.depth
-        )
-        copied_node.parent = self.parent
-        copied_node.children = self.children
-        return copied_node
-
-    def remove_node(self) -> None:
-        self.parent.children.remove(self)
-
+    # --- DUNDERS ---
     def __str__(self):
         return str(self.id)
 

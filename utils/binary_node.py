@@ -13,14 +13,6 @@ class BinaryNode(Node):
         # We overwrite the method to use dictionaries
         self.children = {"left": None, "right": None}
 
-    def has_children(self) -> bool:
-        return self.children["left"] is not None or self.children["right"] is not None
-
-    @property
-    def children_count(self) -> int:
-        children = list(self.children.values())
-        return len([c for c in children if c is not None])
-
     @property
     def key(self) -> int | float:
         """Key: Whether it's a left or right child"""
@@ -30,7 +22,7 @@ class BinaryNode(Node):
 
     def create_child(self, key: str, id: int | float) -> None:
         # x_off of the children relative to the parent
-        node = BinaryNode(id, self.color, rad=self.rad * 0.9)
+        node = BinaryNode(id, color=self.color, rad=self.rad * 0.9)
 
         if self.children[key]:
             raise ValueError(f"VALUE ERROR: Node {self.id} already has a {key} child")
@@ -44,32 +36,8 @@ class BinaryNode(Node):
             raise ValueError(f"VALUE ERROR: Node {self.id} already has a {key} child")
         self.children[key] = child
 
-    def calculate_depth(self) -> int:
-        """Returns depth of the current node"""
-        # We get how many generations of parents the node has
-        self.depth = 0
+        self.compute_depth()
 
-        node = self
-        while node.parent:
-            node = node.parent
-            self.depth += 1
-
-        return self.depth
-
-    def calculate_level(self) -> int:
-        """Returns the node's level: number of depths in which a node has 2 children
-        level=depth if the subtrees are complete"""
-        node = self
-        # Starts at 0, unless parent has 2 children
-        level = 0  # 1 if node.children_count == 2 else 0
-
-        while node.parent:
-            node = node.parent
-            # Checking if the parent has 2 children
-            if node.children_count == 2:
-                level += 1
-
-        return level
 
     def draw(self, screen: pg.surface.Surface, scale: float) -> None:
         # We multiply all the elements by the scale
@@ -81,19 +49,18 @@ class BinaryNode(Node):
 
         self._draw_id(screen, pos, rad)
 
-        # Drawing the children
+        # Drawing the childrenK0
         for child in self.get_children():
             child.draw(screen, scale)
 
             # Not drawing (False) if depth is >= 5
             draw_arrow_head = self.depth < 5
 
-            self._draw_arrow(
+            Visualizer.draw_arrow(
                 screen,
                 scale,
+                self,
                 child,
-                pos,
-                rad,
                 draw_arrow_head=draw_arrow_head,
                 arrow_size=self.rad * 0.35,
             )
@@ -118,16 +85,5 @@ class BinaryNode(Node):
             # Just drawing its id
             Visualizer.draw_text(screen, str(self.id), int(rad * 0.8), pos)
 
-    def copy_node(self) -> "BinaryNode":
-        copied_node = BinaryNode(
-            self.id, self.pos.x, self.pos.y, self.color, self.rad, self.depth
-        )
-        copied_node.parent = self.parent
-        copied_node.children = self.children
-        return copied_node
-
     def remove_node(self) -> None:
         self.parent.children[self.key] = None
-
-    def __repr__(self):
-        return super().__repr__()

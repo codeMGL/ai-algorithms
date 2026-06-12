@@ -1,7 +1,7 @@
 import argparse
 from .bfs import BFS
 from .dfs import DFS
-from utils import Visualizer, SearchNode
+from utils import Visualizer, Node
 
 window_W, window_H = 800, 700
 
@@ -12,7 +12,7 @@ def create_graph(arg):
     match arg:
         case "graph1":
             # A --> J
-            start = SearchNode("A", root=True, color=start_color)
+            start = Node("A", color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -25,11 +25,11 @@ def create_graph(arg):
             H = D.create_child("H")
             I = D.create_child("I")
 
-            goal = SearchNode("J", color=goal_color)
+            goal = Node("J", color=goal_color)
             I.add_child(goal)
         case "graph2":
             # A --> H
-            start = SearchNode("A", root=True, color=start_color)
+            start = Node("A", color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -41,13 +41,13 @@ def create_graph(arg):
             F = D.create_child("F")
             G = D.create_child("G")
 
-            goal = SearchNode("H", color=goal_color)
+            goal = Node("H", color=goal_color)
             E.add_child(goal)
             G.add_child(goal)
 
         case "graph3":
             # A --> I
-            start = SearchNode("A", root=True, color=start_color)
+            start = Node("A", color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -62,12 +62,12 @@ def create_graph(arg):
             E.add_child(G)
             E.create_child("H")
 
-            goal = SearchNode("I", color=goal_color)
+            goal = Node("I", color=goal_color)
             G.add_child(goal)
 
         case "graph4":
             # A --> Z
-            start = SearchNode("A", root=True, color=start_color)
+            start = Node("A", color=start_color)
             print(start.color)
             B = start.create_child("B")
             C = start.create_child("C")
@@ -88,12 +88,12 @@ def create_graph(arg):
             N = L.create_child("N")
             O = N.create_child("O")
 
-            goal = SearchNode("Z", color=goal_color)
+            goal = Node("Z", color=goal_color)
             O.add_child(goal)
 
         case "test_graph":
             # r -> p
-            start = SearchNode("r", root=True, color=(20, 170, 30))
+            start = Node("r", color=(20, 170, 30))
 
             g = start.create_child("g")
             h = start.create_child("h")
@@ -116,7 +116,7 @@ def create_graph(arg):
             j = k.create_child("j")
 
             o = q.create_child("o")
-            goal = SearchNode("p", color=goal_color)
+            goal = Node("p", color=goal_color)
             q.add_child(goal)
         case _:
             raise ValueError("Graph not defined. Please choose a valid argument")
@@ -174,6 +174,8 @@ def main():
             print("Expanded nodes:", dfs.expanded)
         case _:
             raise ValueError("Incorrect argument")
+
+    print("depth", start.get_max_depth())
 
     # -- Running the graph visualizer --
     vis = Visualizer(window_W, window_H, window_title="Search Algorithms", root=start)

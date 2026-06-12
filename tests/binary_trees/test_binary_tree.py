@@ -15,7 +15,7 @@ def create_random_array(n):
 def test_sort(n):
     array = create_random_array(n)
     
-    binary_tree = BinaryTree(array, W=100)
+    binary_tree = BinaryTree(array)
     
     result = binary_tree.sort()
     
