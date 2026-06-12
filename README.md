@@ -7,8 +7,23 @@ The project is organised on folders (``search_algorithms``, ``binary_trees``, et
 - To run the script: ``python -m <folder>``
 - To run some tests: ``python -m pytest tests/<folder>`` or ``pytest tests/<folder>/<test_file>.py``
 
+## What I'm learning with this project
+- How to create a medium-sized, well structured modular project
+- How to correctly implement AI algorithms seen in class
+- How to handle recursion on trees and functions
+- How to use lambda functions in lists (i.e, sorting)
+- How to run tests using Pytest
+- How to add paramenters to use different algorithms using Argparse
+- How to use data structures like Deque (Double-Ended Queue)
+
 ## Visualizer
 Drawing the graphs using the [Reingold-Tilford algorithm](https://towardsdatascience.com/reingold-tilford-algorithm-explained-with-walkthrough-be5810e8ed93/) and the [Pygame](https://www.pygame.org/docs/) library
+
+How to use it?
+Move with the arrow keys or WASD. Scroll with your mouse to change the scale/zoom of the canvas.
+To toggle the drawing view, press the space bar:
+- `scaled to fit`: Nodes are drawn to make the entire graph fit on the drawing window
+- `infinite canvas`: Nodes are drawn at a bigger size, but not all of them can be shown at the same time
 
 ## 1. Search algorithms
 Implementation of BFS, DFS, Dijkstra and A* algorithms from scratch
