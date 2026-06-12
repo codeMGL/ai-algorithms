@@ -7,11 +7,12 @@ from utils import SearchNode, Visualizer
 
 random.seed(42)
 
-W, H = 1200, 700
-test_values = [1, 10, 100, 1000, 5_000, 10_000, 15_000]
+window_W, window_H = 1200, 700
+test_values = [1, 10, 100, 1000, 10_000, 100_000]
+
 
 def random_tree_generator(n):
-    start = SearchNode("0", root=True, W=W)
+    start = SearchNode("0", root=True)
 
     G= nx.Graph()
 
@@ -31,7 +32,7 @@ def random_tree_generator(n):
                 # No more children
                 break
 
-        # Number of parents
+        # Number of children
         for _ in range(random.randrange(1, 5)):
             # Adding a SearchNode object
             new_node = node.create_child(str(i))
@@ -50,7 +51,7 @@ def test_bfs(n):
     bfs = BFS(start, goal)
     bfs.run()
 
-    # vis = Visualizer(W, H, root=start)
+    # vis = Visualizer(window_W, window_H, root=start)
     # vis.run()
 
     path = nx.shortest_path(G, start.id, goal.id)
@@ -66,9 +67,6 @@ def test_dfs(n):
     start, goal, G = random_tree_generator(n)
     dfs = DFS(start, goal)
     dfs.run()
-
-    # vis = Visualizer(W, H, root=start)
-    # vis.run()
 
     path = nx.shortest_path(G, start.id, goal.id)
 
