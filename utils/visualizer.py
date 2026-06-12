@@ -4,14 +4,6 @@ Other visualization options: Arcane, Matplotlib, Pyglet, Ursina...
 This file includes some classes to make coding custom graphs
 (binary trees, Bayesian networks, etc) easier and faster"""
 
-# TO DO
-# REFACTOR: Difference between re-ordering BinaryNodes and other Nodes
-# - Maybe create a [temp] list such as [left_child|None, right_child|Node]
-
-
-# Resize graph horizontally as well --> Reingold-Tilford algorithm to order the graph
-# Add params to control options (node color, arrow head, etc)
-
 import pygame as pg
 
 
@@ -40,23 +32,23 @@ class Visualizer:
         # Can be edited by the user (mouse wheel)
         self._zoom = 1
 
-        self.x_off, self.y_off = 10, 10
+        self.x_off, self.y_off = 15, 20
 
         # Automatically resizes the graph using the R-T algorithm
         self.reingold_tilford()
 
-    def reingold_tilford(self, sibling_dist=1, subtree_dist=1):
+    def reingold_tilford(self):
         """Reingold-Tilford algorithm to order the graph"""
-        # x: Initial x coordinate based on the node's position
-        # mod: Amount of shift for the descendants to make the children centered
-        # shift: Amount of shift for the descendants (and the node itself) to
-        # not overlap with the subtrees on the left
+        # We will calculate the following values:
+        #  - x: Initial x coordinate based on the node's position
+        #  - mod: Amount of shift for the descendants to make the children centered
+        #  - shift: Amount of shift for the descendants (and the node itself) to
+        #    not overlap with the subtrees on the left
         if not self.root.has_children():
             return
 
         # First Pass
         # Post-order Traversal (Left-Right-Root) of the tree to compute the x, mod, and shift attributes
-        # self._first_pass(sibling_dist, subtree_dist)
         self._first_pass(self.root.rad * 2, self.root.rad * 2)
 
         # Second Pass
@@ -64,14 +56,12 @@ class Visualizer:
         self._second_pass()
 
         # Third Pass
-        # Pre-order Traversal of the tree, adjusting x values for any negative cases, if any
+        # Adjusting x values for any negative cases, if any
         # --> Not needed, negative cases are handled on the second pass
 
     def _first_pass(self, sibling_dist, subtree_dist):
         """Calculates the 'x', 'mod' and 'shift' attributes"""
         nodes = self._post_order_traversal(self.root)
-        print("First Pass")
-        print(nodes)
 
         # --- Part 1 ---
         # Computes 'x' and 'mod' values for every child
@@ -79,12 +69,9 @@ class Visualizer:
             self._compute_first_pass(node, sibling_dist)
 
         # Can be collapsed on the same loop REFACTOR (Check for bugs)
-        print("Second phase of first pass (Post-order traversal)")
-        print(nodes)
 
         # --- Part 2 ---
         # For every node traversed, we will check for overlaps with the subtrees of all the left siblings with its subtree
-        print("\n[Compute shift]")
 
         for node in nodes:
             # Computes 'shift' values for every node
@@ -99,14 +86,14 @@ class Visualizer:
         if node.parent.get_children()[0] == node:  # If it's the leftmost child
 
             if node.has_children():
-                # Yellow node, centered with respect to its children
+                # Leftmost node and has children: centered with respect to its children
                 children = node.get_children()
                 node.x = (children[0].x + children[-1].x) / 2
             else:
                 node.x = 0
 
         elif node.has_children():
-            # Red node: It needs to center itself with respect to its children
+            # Not the leftmost, but has children: It needs to center itself with respect to its children
             children = node.get_children()
             midpoint = (children[0].x + children[-1].x) / 2
             node.mod = node.x - midpoint
@@ -115,7 +102,6 @@ class Visualizer:
         i = 1
         for sibling in node.get_right_siblings():
             sibling.x = node.x + sibling_dist * i
-            # print(f"{sibling} (x={sibling.x}) right sibling of {node}")
             i += 1
 
         return node.x
@@ -155,7 +141,7 @@ class Visualizer:
             node = node.parent
         return shift
 
-    def _compute_shift(self, node, subtree_dist=1):
+    def _compute_shift(self, node, subtree_dist):
         # Calculating the "profile" of a subtree from a left/right POV
         # If the root has children [A, B, C, D], all the calculations would be:
         # right(A) vs left(B)
@@ -203,17 +189,14 @@ class Visualizer:
 
     def _second_pass(self):
         """Computes the real x,y coordinates of every node"""
-        # Using self.root.rad * 2
-        # DIVIDE FUNCTION IN PARTS
-        # SET COMMENTS AND DELETE UNNECESSARY ONES
-        # CLEAN CODE AND CODE ORDER (max_depth, ._depth, for nodes in nodes x2, x_off)
-
-        # Vertical height of the graph based on the depth
-        max_depth = self.root.get_max_depth()
-        print("total depth", max_depth)
-
-        # --- CALCULATING 'x' COORDINATES ---
         nodes = self._pre_order_traversal(self.root)
+        max_depth = self.root.get_max_depth()
+
+        node_radius = self._calc_x_coords(nodes, max_depth)
+        self._calc_y_coords(nodes, max_depth, node_radius)
+
+    def _calc_x_coords(self, nodes, max_depth):
+        # --- CALCULATING 'x' COORDINATES ---
 
         # -- Calculating the 'x' coordinates after the algorithm --
         for node in nodes:
@@ -223,18 +206,8 @@ class Visualizer:
             shift = self._get_shift(node)
             node.pos.x = node.x + mod + shift
 
-        # x_off added later
-        # # Adding some offset at both ends to make the graph look better
-        # x_off = self.x_off + self.root.rad
-        # W = self.W - x_off * 2
-
-        # -- Updating the x coordinates --
-        for node in nodes:
-            # node.pos.x = x_off + (node.pos.x - min_x) * fit_screen
-            # node.pos.x = 0 + (node.pos.x - min_x) * node.rad * 2
-            pass
-
-        # -- Calculating the minumum distance between nodes, so they don't overlap --
+        # -- Calculating the minumum distance between nodes --
+        # This way, we can see what's the maximum radius they can have while they don't overlap
         min_dist = float("inf")
         for depth in range(1, max_depth + 1):
             nodes_at_depth = self._get_nodes_at_depth(depth)
@@ -245,194 +218,59 @@ class Visualizer:
                 min_dist = min(min_dist, dist)
 
         # Makes the node occupy all the space (plus some separation)
-        global_rad = min_dist / 3
+        # In case there's just a node on each level
+        if min_dist == float("inf"):
+            min_dist = self.root.rad * 2
 
-        print("Separation between nodes:", min_dist)
-        print("Nodes radius (global_rad):", global_rad)
+        # min_dist / 3 gives a radius as spacing | min_dist / 4 gives double the radius as spacing
+        node_radius = min_dist / 3
 
         # Adding some offset at both ends to make the graph look better
-        x_off = self.x_off + global_rad
+        x_off = self.x_off + node_radius
         W = self.W - x_off * 2
 
         x_values = [node.pos.x for node in nodes]
-        min_x = min(x_values)
+        min_x, max_x = min(x_values), max(x_values)
         # Formula: range_x = (max + rad) - (min - rad) = max - min + rad + rad
-        range_x = (
-            max(x_values) - min_x + global_rad * 2
-        )  # We need to account for nodes radius as well
-        fit_screen = W / range_x  ### Transform to scale and comment meaning explanation
-        print("new fit_screen", fit_screen)
-        self._scale = fit_screen  ################################################### SCALE ###############
+        range_x = max_x - min_x + node_radius * 2
 
-        for node in nodes:
-            node.x_off = self.x_off
-            node.y_off = self.y_off
+        # Scaling so the graph fits the screen (used in 'scaled_to_fit' mode)
+        self._scale = W / range_x
+
+        # And we apply the offset to every node
+        self._move_graph(self.x_off, self.y_off, reset=True)
 
         # The root must be in the middle of its children
         children = self.root.get_children()
         self.root.pos.x = (children[0].pos.x + children[-1].pos.x) / 2
 
-        # --- CALCULATING 'y' COORDINATES ---
-        y_off = self.y_off + global_rad
+        return node_radius
+
+    def _calc_y_coords(self, nodes, max_depth, node_radius):
+        y_off = self.y_off + node_radius
         H = self.H - y_off * 2
 
-        # CHECH COMMENTS ############################
-        # Dividing the screen 'H' (each level must be at least 'global_rad * 2 + level_separation' long)
-        # Vertical size of a level
-        # Formula (Param.): line_length >= rad * 2      # Aesthetically pleasing line
-        # Formula:          level_separation = rad * 2 + line_length
-        # level_separation >= rad * 2 + rad * 2
-        # level_separation >= rad * 4
+        # Each level must have at least space --> 'level_separation = node_radius * 2 + line_length'
+        # The line should be as long as the diameter --> 'line_length >= rad * 2'
+        # level_separation = rad * 2 + line_length
+        # ==> level_separation >= rad * 4
+        # ==> rad <= level_separation / 4
         level_separation = H / max_depth
+        max_rad_by_separation = level_separation / 4
 
-        rad = level_separation / 4
-        print("Node rad (global_rad):", global_rad, "rad (by level separation)", rad)
+        line_length = level_separation - node_radius * 2
 
-        global_rad = min(rad, global_rad)
-        print("final rad", global_rad)
+        # We choose the better option, so they don't intersect
+        node_radius = min(max_rad_by_separation, node_radius)
 
         # Adjusting the rad for each level so nodes don't overlap
         for node in nodes:
-            # 'node.rad' cannot be bigger than the parent
             if node.parent:
-                node.rad = min(node.parent.rad, global_rad)
-                pass
+                # 'node.rad' cannot be bigger than the parent
+                node.rad = min(node.parent.rad, node_radius)
             else:
                 # Root node
-                node.rad = global_rad
-                pass
-
-        # Already takes into account y_off as an attribute
-        self.root.pos.y = 0
-
-        # 'H' now starts from the root node, so we remove it's 'y' position
-        # H -= global_rad * 2  # self.y_off
-        level_separation = H / max_depth
-        line_length = level_separation - global_rad * 2
-        line_length = H / max_depth - global_rad * 2
-        print("level_separation", level_separation, "line_length", line_length)
-
-        y = (global_rad * 2 + line_length) * max_depth  # - global_rad * 2
-        # H = global_rad * 2 * max_depth + line_length * max_depth
-        # (H - global_rad * 2 * max_depth) / max_depth = line_length
-        #  H / max_depth - global_rad * 2 = line_length
-
-        print("H", H, "H (with line_length)", y)
-
-        self._reposition_subtree(self.root, line_length, level_separation)
-
-    # Bien con not scaled (excepto que los nodos se quedan en el borde izdo)
-    def _second_pass0(self):
-        """Computes the real x,y coordinates of every node"""
-        # sibling_dist, subtree_dist
-        # DIVIDE FUNCTION IN PARTS
-        # SET COMMENTS AND DELETE UNNECESSARY ONES
-        # CLEAN CODE AND CODE ORDER (max_depth, ._depth, for nodes in nodes x2, x_off)
-
-        # Vertical height of the graph based on the depth
-        max_depth = self.root.get_max_depth()
-        print("total depth", max_depth)
-
-        # --- CALCULATING 'x' COORDINATES ---
-        nodes = self._pre_order_traversal(self.root)
-
-        # -- Calculating the 'x' coordinates after the algorithm --
-        for node in nodes:
-            # 'mod' shifts just its descendants
-            # while 'shift' shifts the current node as well
-            mod = self._get_mod(node)
-            shift = self._get_shift(node)
-            node.pos.x = node.x + mod + shift
-
-        # x_off added later
-        # # Adding some offset at both ends to make the graph look better
-        # x_off = self.x_off + self.root.rad
-        # W = self.W - x_off * 2
-
-        # Multiplying factor to draw the nodes throughout all the span of the screen
-        x_values = [node.pos.x for node in nodes]
-        min_x = min(x_values)
-
-        # -- Updating the x coordinates --
-        for node in nodes:
-            node.pos.x = 0 + (node.pos.x - min_x) * node.rad * 2
-
-        # -- Calculating the minumum distance between nodes, so they don't overlap --
-        min_dist = float("inf")
-        for depth in range(1, max_depth + 1):
-            nodes_at_depth = self._get_nodes_at_depth(depth)
-            nodes_at_depth.sort(key=lambda node: node.pos.x)
-
-            for j in range(len(nodes_at_depth) - 1):
-                dist = nodes_at_depth[j + 1].pos.x - nodes_at_depth[j].pos.x
-                min_dist = min(min_dist, dist)
-
-        # Makes the node occupy all the space (plus some separation)
-        global_rad = min_dist / 3
-
-        print("Separation between nodes:", min_dist)
-        print("Nodes radius (global_rad):", global_rad)
-
-        # Adjusting the rad for each level so nodes don't overlap
-        self.root.rad = global_rad
-        for node in nodes:
-            # 'node.rad' cannot be bigger than the parent
-            if node.parent:
-                node.rad = min(node.parent.rad, global_rad)
-            else:
-                node.rad = global_rad
-
-        # Adding some offset at both ends to make the graph look better
-        x_off = self.x_off + global_rad
-        W = self.W - x_off * 2
-
-        x_values = [node.pos.x for node in nodes]
-        min_x = min(x_values)
-        range_x = (
-            max(x_values) - min_x + global_rad * 2
-        )  # We need to account for nodes radius as well
-        fit_screen = W / range_x  ### Transform to scale and comment meaning explanation
-        print("new fit_screen", fit_screen)
-        self._scale = fit_screen  ################################################### SCALE ###############
-
-        for node in nodes:
-            # node.pos.x = off + (node.pos.x - min_x) * fit_screen
-            # node.pos.x = off + (node.pos.x - min_x) * node.rad * 2
-            node.x_off = self.x_off
-            node.y_off = self.y_off
-
-        # The root must be in the middle of its children
-        children = self.root.get_children()
-        self.root.pos.x = (children[0].pos.x + children[-1].pos.x) / 2
-
-        # --- CALCULATING 'y' COORDINATES ---
-        y_off = self.y_off + global_rad
-        H = self.H - y_off * 2
-
-        # CHECH COMMENTS ############################
-        # Dividing the screen 'H' (each level must be at least 'global_rad * 2 + level_separation' long)
-        # Vertical size of a level
-        # Formula (Param.): line_length >= rad * 2      # Aesthetically pleasing line
-        # Formula:          level_separation = rad * 2 + line_length
-        # level_separation >= rad * 2 + rad * 2
-        # level_separation >= rad * 4
-        # rad = level_separation / 4
-
-        # Already takes into account y_off as an attribute
-        self.root.pos.y = 0
-
-        # 'H' now starts from the root node, so we remove it's 'y' position
-        # H -= global_rad * 2  # self.y_off
-        level_separation = H / max_depth
-        line_length = level_separation - global_rad * 2
-        line_length = H / max_depth - global_rad * 2
-
-        y = (global_rad * 2 + line_length) * max_depth  # - global_rad * 2
-        # H = global_rad * 2 * max_depth + line_length * max_depth
-        # (H - global_rad * 2 * max_depth) / max_depth = line_length
-        #  H / max_depth - global_rad * 2 = line_length
-
-        print("H", H, "H (with line_length)", y)
+                node.rad = node_radius
 
         self._reposition_subtree(self.root, line_length, level_separation)
 
@@ -539,10 +377,17 @@ class Visualizer:
         if self._scaled_to_fit:
             scale = self._scale * self._zoom
             self.root.draw(self.screen, scale)
-            Visualizer.draw_text(self.screen, f"Scaled to fit. Scale: {round(scale, 2)}", 18, (90, 20))
+            Visualizer.draw_text(
+                self.screen, f"Scaled to fit. Scale: {round(scale, 2)}", 18, (90, 20)
+            )
         else:
             self.root.draw(self.screen, self._zoom)
-            Visualizer.draw_text(self.screen, f"Infinite canvas. Scale: {round(self._zoom, 2)}", 18, (90, 20))
+            Visualizer.draw_text(
+                self.screen,
+                f"Infinite canvas. Scale: {round(self._zoom, 2)}",
+                18,
+                (90, 20),
+            )
 
         # --- Updating screen ---
         pg.display.flip()
@@ -560,12 +405,6 @@ class Visualizer:
         for node in nodes:
             node.x_off = self.x_off
             node.y_off = self.y_off
-
-    def get_children(self, node):
-        print("=" * 20, "Shoudln't be used! Refactor", node.id, node)
-        if isinstance(node.children, dict):
-            return [c for c in node.children.values() if c is not None]
-        return [c for c in node.children if c is not None]
 
     @staticmethod
     def draw_text(
