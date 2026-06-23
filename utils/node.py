@@ -59,10 +59,9 @@ class Node:
         return siblings
 
     def create_child(self, id: int | float) -> "Node":
-
         children_ids = [c.id for c in self.children if c.id]
         if id in children_ids:
-            raise ValueError(f"VALUE ERROR: Node {self.id} already has a {id} child")
+            raise ValueError(f"[create_child] Node '{self.id}' already has a '{id}' child")
 
         # Creates a child of it's type (accepts polymorphism)
         child = type(self)(id, rad=self.rad)
@@ -72,7 +71,7 @@ class Node:
     def add_child(self, child: "Node") -> "Node":
         if self.children.count(child) > 0:
             raise ValueError(
-                f"VALUE ERROR: Node {self.id} already has a {child.id} child"
+                f"[add_child] Node '{self.id}' already has a '{child.id}' child"
             )
 
         self.children.append(child)
@@ -231,11 +230,17 @@ class Node:
             # Not drawing (False) if depth is >= 5
             draw_arrow_head = self.depth < 5
 
+            # Scaling and creating vectors
+            child_pos, child_rad = child._scaled_pos_rad(scale)
+            parent_vec = pg.Vector2(pos.x, pos.y + rad)
+            child_vec = pg.Vector2(child_pos.x, child_pos.y - child_rad)
+            thickness = 3 if child.parent == self else 1
+
             Visualizer.draw_arrow(
                 screen,
-                scale,
-                self,
-                child,
+                parent_vec,
+                child_vec,
+                thickness=thickness,
                 draw_arrow_head=draw_arrow_head,
                 arrow_size=rad * 0.45,
             )

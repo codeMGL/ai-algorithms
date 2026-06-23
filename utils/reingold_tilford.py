@@ -16,7 +16,7 @@ class ReingoldTilford:
         #  - shift: Amount of shift for the descendants (and the node itself) to
         #    not overlap with the subtrees on the left
         if not self.root.has_children():
-            return
+            return 1
 
         # First Pass
         # Post-order Traversal (Left-Right-Root) of the tree to compute the x, mod, and shift attributes

@@ -10,7 +10,6 @@ random.seed(42)
 window_W, window_H = 1200, 700
 test_values = [1, 10, 100, 1000, 10_000, 100_000]
 
-
 def random_tree_generator(n):
     start = Node("0")
 
@@ -51,8 +50,8 @@ def test_bfs(n):
     bfs = BFS(start, goal)
     bfs.run()
 
-    vis = Visualizer(window_W, window_H, root=start)
-    vis.run()
+    # vis = Visualizer(window_W, window_H, root=start)
+    # vis.run()
 
     path = nx.shortest_path(G, start.id, goal.id)
 
