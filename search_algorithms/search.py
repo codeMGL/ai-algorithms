@@ -9,7 +9,7 @@ class SearchAlgorithm:
 
         self.current_node = start
 
-        # Queue of opened nodes (FIFO)
+        # Double-queue of opened nodes
         self.opened = deque()
 
         # List of expanded nodes

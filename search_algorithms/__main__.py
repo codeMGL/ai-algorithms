@@ -1,18 +1,19 @@
 import argparse
 from .bfs import BFS
 from .dfs import DFS
-from utils import Visualizer, Node
+from .dijkstra import Dijkstra
+from utils import Visualizer, Node, WeightedNode
 
 window_W, window_H = 800, 700
 
 
-def create_graph(arg):
+def create_graph(arg, NodeType=Node):
     start_color = (20, 170, 30)
     goal_color = (23, 104, 72)
     match arg:
         case "graph1":
             # A --> J
-            start = Node("A", color=start_color)
+            start = NodeType("A", color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -25,11 +26,12 @@ def create_graph(arg):
             H = D.create_child("H")
             I = D.create_child("I")
 
-            goal = Node("J", color=goal_color)
+            goal = NodeType("J", color=goal_color)
             I.add_child(goal)
+
         case "graph2":
             # A --> H
-            start = Node("A", color=start_color)
+            start = NodeType("A", color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -41,13 +43,13 @@ def create_graph(arg):
             F = D.create_child("F")
             G = D.create_child("G")
 
-            goal = Node("H", color=goal_color)
+            goal = NodeType("H", color=goal_color)
             E.add_child(goal)
             G.add_child(goal)
 
         case "graph3":
             # A --> I
-            start = Node("A", color=start_color)
+            start = NodeType("A", color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
 
@@ -62,13 +64,12 @@ def create_graph(arg):
             E.add_child(G)
             E.create_child("H")
 
-            goal = Node("I", color=goal_color)
+            goal = NodeType("I", color=goal_color)
             G.add_child(goal)
 
         case "graph4":
             # A --> Z
-            start = Node("A", color=start_color)
-            print(start.color)
+            start = NodeType("A", color=start_color)
             B = start.create_child("B")
             C = start.create_child("C")
             D = start.create_child("D")
@@ -88,12 +89,12 @@ def create_graph(arg):
             N = L.create_child("N")
             O = N.create_child("O")
 
-            goal = Node("Z", color=goal_color)
+            goal = NodeType("Z", color=goal_color)
             O.add_child(goal)
 
         case "test_graph":
             # r -> p
-            start = Node("r", color=(20, 170, 30))
+            start = NodeType("r", color=(20, 170, 30))
 
             g = start.create_child("g")
             h = start.create_child("h")
@@ -116,7 +117,7 @@ def create_graph(arg):
             j = k.create_child("j")
 
             o = q.create_child("o")
-            goal = Node("p", color=goal_color)
+            goal = NodeType("p", color=goal_color)
             q.add_child(goal)
         case _:
             raise ValueError("Graph not defined. Please choose a valid argument")
@@ -142,12 +143,15 @@ def main():
     )
     parser.add_argument(
         "algorithm",
-        choices=("bfs", "dfs", "all"),
+        choices=("bfs", "dfs", "dijkstra", "all"),
         help="Search algorithm to run",
     )
     args = parser.parse_args()
 
-    start, goal = create_graph(args.graph)
+    if args.algorithm == "dijkstra" or args.algorithm == "all":
+        start, goal = create_graph(args.graph, NodeType=WeightedNode)
+    else:
+        start, goal = create_graph(args.graph, NodeType=Node)
 
     match args.algorithm:
         case "bfs":
@@ -160,6 +164,14 @@ def main():
             dfs.run()
             print("PATH (dfs):", dfs.path)
             print("Expanded nodes:", dfs.expanded)
+        case "dijkstra":
+            dij = Dijkstra(start, goal)
+            dij.run()
+            start.print_weights()
+            print("PATH (dijkstra):", dij.path)
+            print("Expanded nodes:", dij.expanded)
+
+
         case "all":
             bfs = BFS(start, goal)
             bfs.run()
@@ -172,10 +184,15 @@ def main():
             print("\nDFS:")
             print("Path:", dfs.path)
             print("Expanded nodes:", dfs.expanded)
+
+            dij = Dijkstra(start, goal)
+            dij.run()
+            print("\nDijkstra:")
+            print("Path:", dij.path)
+            print("Expanded nodes:", dij.expanded)
         case _:
             raise ValueError("Incorrect argument")
 
-    print("depth", start.get_max_depth())
 
     # -- Running the graph visualizer --
     vis = Visualizer(window_W, window_H, window_title="Search Algorithms", root=start)
